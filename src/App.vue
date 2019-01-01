@@ -49,6 +49,11 @@
 
     <v-content>
       <v-container fluid>
+
+
+
+
+        <!-- The welcome screen -->
         <div id="input-view" v-bind:style="{display: inputViewDisplay}">
           <v-textarea name="input-article" auto-grow box autofocus v-model="textarea"></v-textarea>
           <div class="text-xs-right">
@@ -57,35 +62,70 @@
           </div>
         </div>
 
+
+
+
+
+        <!-- loading screen -->
         <div class="transition-view" v-bind:style="{display: transitionViewDisplay}">
           <v-progress-circular indeterminate color="red"></v-progress-circular>
         </div>
 
+
+
+
+
+        <!-- reader -->
         <div class="reader-view" v-bind:style="{display: readerViewDisplay}">
-            <div class="reader-content" v-bind:style="{width: columnWidth+'%', fontSize: textSize+'em', fontFamily: font, textAlign: align }"></div>
-
-          <div class="reader-view-controls">
-            <v-slider class="reader-view-width-control" v-model="columnWidth" label="width" min="30" max="90"></v-slider>
-            <v-slider class="reader-view-size-control" v-model="textSize" label="font" min="1.0" max="2.5" step="0.1"></v-slider>
-            <v-btn-toggle class="reader-view-alignment-control" v-model="align">
-              <v-btn flat value="left"><v-icon>format_align_left</v-icon></v-btn>
-              <v-btn flat value="center"><v-icon>format_align_center</v-icon></v-btn>
-              <v-btn flat value="right"><v-icon>format_align_right</v-icon></v-btn>
-              <v-btn flat value="justify"><v-icon>format_align_justify</v-icon></v-btn>
-            </v-btn-toggle>
-            <v-btn-toggle class="reader-view-font-control" v-model="font">
-              <v-btn flat value="Times">Times</v-btn>
-              <v-btn flat value="Helvetica">Helvetica</v-btn>
-            </v-btn-toggle>
-          </div>
-
+          <!-- Controllers for how to present the content -->
           <div class="reader-view-controls-container">
-            <ul class="reader-view-controls">
-              <li><div><v-icon large>format_align_left</v-icon></div></li>
-              <li><div><v-icon large>format_align_left</v-icon></div></li>
-              <li><div><v-icon large>format_align_left</v-icon></div></li>
+            <ul>
+              <!-- the first control item: Alignment -->
+              <li><div @click="controlItemOnClick(0)" class="icon-container"><v-hover><v-icon slot-scope="{ hover }" :color="`${hover? '#00ee8d' : undefined}`" large>format_align_center</v-icon></v-hover></div>
+                <div id="align-selector" :style="{display: controlsState[0]}">
+                  <v-btn-toggle v-model="align">
+                    <v-btn flat value="left"><v-icon>format_align_left</v-icon></v-btn>
+                    <v-btn flat value="center"><v-icon>format_align_center</v-icon></v-btn>
+                    <v-btn flat value="right"><v-icon>format_align_right</v-icon></v-btn>
+                    <v-btn flat value="justify"><v-icon>format_align_justify</v-icon></v-btn>
+                  </v-btn-toggle>
+                </div></li>
+              <!-- the second control item: Width -->
+              <li><div @click="controlItemOnClick(1)" class="icon-container"><v-hover><v-icon slot-scope="{ hover }" :color="`${hover? '#00ee8d' : undefined}`" large>aspect_ratio</v-icon></v-hover></div>
+                <div id="aspect-selector" :style="{display: controlsState[1]}"><v-slider class="reader-view-width-control" v-model="columnWidth" label="width" min="30" max="90"></v-slider></div>
+              </li>
+              <!-- the third control item: Font -->
+              <li><div @click="controlItemOnClick(2)" class="icon-container"><v-hover><v-icon slot-scope="{ hover }" :color="`${hover? '#00ee8d' : undefined}`" large>title</v-icon></v-hover></div>
+                <div id="font-selector" :style="{display: controlsState[2]}">
+                  <v-btn-toggle class="reader-view-font-control" v-model="font">
+                    <v-btn flat value="Times">Times</v-btn>
+                    <v-btn flat value="Helvetica">Helvetica</v-btn>
+                  </v-btn-toggle></div>
+              </li>
+              <!-- the forth control item: Size -->
+              <li><div @click="controlItemOnClick(3)" class="icon-container"><v-hover><v-icon slot-scope="{ hover }" :color="`${hover? '#00ee8d' : undefined}`" large>format_size</v-icon></v-hover></div>
+                <div id="size-selector" :style="{display: controlsState[3]}">
+                  <v-slider class="reader-view-size-control"  v-model="textSize" label="font" min="1.0" max="2.5" step="0.1"></v-slider>
+                </div>
+              </li>
             </ul>
           </div>
+
+
+
+          <!-- The main content on the page -->
+          <div class="reader-content" @mouseup="getSelectionText" v-bind:style="{width: columnWidth+'%', fontSize: textSize+'em', fontFamily: font, textAlign: align }"></div>
+
+
+          <!-- The define button, normally hidden -->
+            <v-btn @click="lookupWord" id="define-btn" color="warning" fab dark>
+              <v-icon>language</v-icon>
+            </v-btn>
+
+
+
+
+
 
 
         </div>
@@ -104,9 +144,15 @@ export default {
   components: {
     //
   },
+  mounted () {
+    console.log('mounted');
+    document.addEventListener('scroll', this.hideBtn);
+    document.addEventListener('pointerdown', this.hideBtn);
+  },
   data () {
     return {
-      font: "left",
+      controlsState :['none', 'none', 'none', 'none'],
+      font: "Helvetica",
       align: "left",
       columnWidth: "70",
       textSize: "1.5",
@@ -134,7 +180,7 @@ export default {
       this.inputViewDisplay = "none";
       this.transitionViewDisplay = "flex";
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 300));
       this.transitionViewDisplay = "none";
       this.readerViewDisplay = "flex";
 
@@ -145,6 +191,50 @@ export default {
         p.innerText = paragraph;
         readerContent.appendChild(p);
       }
+    },
+    controlItemOnClick (selector) {
+      for (let i = 0; i < 4; i++) {
+        if (i == selector && this.controlsState[i] == 'none') {
+          this.$set(this.controlsState, i, 'block');
+        } else {
+          this.$set(this.controlsState, i, 'none');
+        }
+      }
+      document.addEventListener('click', this.cancelAll);
+    },
+    cancelAll (event) {
+      if (event.target.closest(".reader-view-controls-container")) {
+        return;
+      }
+      for (let j = 0; j < 4; j++) {
+        this.$set(this.controlsState, j, 'none');
+      }
+    },
+    getSelectionText(event) {
+      const sel = window.getSelection();
+      const text = sel.toString().trim();
+      if (text == "" || (text.indexOf(" ") != -1)) return; /* single word only */
+      const oRange = sel.getRangeAt(0);
+      const oRect = oRange.getBoundingClientRect();
+
+      const xpos = (oRect.left + oRect.right) / 2;
+      const ypos = (window.innerHeight - oRect.bottom) < 200 ? oRect.top - 80 : oRect.bottom + 20;
+
+      const btn = document.getElementById('define-btn');
+
+
+      btn.style.top = ypos + 'px';
+      btn.style.left = xpos + 'px';
+      btn.style.display = 'block';
+      event.stopPropagation();
+    },
+    hideBtn(event) {
+      if (event && event.type == 'click' && event.target && event.target.closest("#define-btn")) return;
+      const btn = document.getElementById('define-btn');
+      btn.style.display = 'none';
+    },
+    looupWord () {
+
     }
   }
 }
@@ -174,21 +264,94 @@ export default {
 
   /* need transition, maybe? */
 
+  #define-btn {
+    display: none;
+    position: fixed;
+  }
+
+
+  /* Mobile */
+  /* container positions the controls on screen */
   .reader-view-controls-container {
     box-sizing: border-box;
-    z-index: 10;
+    z-index: 1;
+    top: 24px;
+    position: relative;
+    width: 193px;
+    border: 1px solid #CCC;
+    border-right: 0px;
   }
 
 
-  @media screen and (min-height: 420px) and (min-width: 32.5625em) {
-    .reader-view-controls-container {
-      top: 24px;
-      position: relative;
-      margin: 0px;
-      padding: 0px;
-      width: 200px;
-    }
+  .reader-view-controls-container ul {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: block;
+
   }
+
+  .reader-view-controls-container li {
+    box-sizing: border-box;
+    list-style: none;   /* no marker for list item elements */
+    color: #CCC;
+    display: list-item;
+    margin: 0;
+    padding: 0;
+    background-color: #FFF;
+    position: relative;
+    float: right;
+
+  }
+
+  .reader-view-controls-container .icon-container {
+    box-sizing: border-box;
+    display: table-cell;
+    width: 48px;
+    height: 48px;
+    text-align: center;
+    vertical-align: middle;
+    /* transition: all .2s ease-in-out */
+    border-right: 1px solid #CCC;
+  }
+
+  #align-selector {
+    left: -130px;
+    top: 55px;
+    width: 300px;
+    position: absolute;
+    z-index: 99;
+  }
+
+  #aspect-selector {
+    left: -145px;
+    top: 40px;
+    width: 300px;
+    position: absolute;
+    z-index: 99;
+  }
+
+  #font-selector {
+    left: -30px;
+    top: 55px;
+    width: 300px;
+    position: absolute;
+    z-index: 99;
+  }
+
+  #size-selector {
+    left: -49px;
+    top: 40px;
+    width: 300px;
+    position: absolute;
+    z-index: 99;
+  }
+
+  .reader-content {
+    margin-top: 60px;
+  }
+
 
   @media screen and (min-height: 26.25em) and (min-width: 49.4375em) {
     .reader-view-controls-container {
@@ -197,37 +360,68 @@ export default {
       left: auto;
       width: auto;
       position: fixed;
-
+      border: 1px solid #CCC;
+      border-bottom: 0px;
     }
+
+    .reader-view-controls-container li {
+      float: none;
+    }
+
+    .reader-view-controls-container .icon-container {
+      border: 0px;
+      border-bottom: 1px solid #CCC;
+    }
+
+    #align-selector {
+      position: absolute;
+      width: 180px;
+      right: 46px;
+      padding: .3125rem  .8rem .375rem;
+      border-right: none;
+      top: -1px;
+      z-index: 99;
+      left: auto;
+    }
+
+    #aspect-selector {
+      position: absolute;
+      right: 66px;
+      padding: 0rem  1.2rem .375rem;
+      border-right: none;
+      top: -8px;
+      z-index: 99;
+      width: 150px;
+      left: auto;
+    }
+
+    #font-selector {
+      position: absolute;
+      right: 53px;
+      padding: 0;
+      border-right: none;
+      top: 5px;
+      z-index: 99;
+      width: 150px;
+      left: auto;
+    }
+
+    #size-selector {
+      position: absolute;
+      right: 66px;
+      padding: 0rem  1.2rem .375rem;
+      border-right: none;
+      top: -8px;
+      z-index: 99;
+      width: 140px;
+      left: auto;
+    }
+
+
+
   }
 
 
-  .reader-view-controls {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    border: 1px solid #CCC;
-    border-bottom: 0px; /* this is ugly, fix if you can */
-  }
 
-  .reader-view-controls li {
-    list-style: none;   /* no marker for list item elements */
-    color: #CCC;
-    display: list-item;
-    margin: 0;
-    padding: 0;
-    background-color: #FFF;
-    position: relative;
-    float: none;
-  }
 
-  .reader-view-controls div {
-    display: table-cell;
-    width: 48px;
-    height: 48px;
-    text-align: center;
-    vertical-align: middle;
-    /* transition: all .2s ease-in-out */
-    border-bottom: 1px solid #CCC;
-  }
 </style>
