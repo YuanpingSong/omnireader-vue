@@ -226,14 +226,43 @@ export default {
       btn.style.top = ypos + 'px';
       btn.style.left = xpos + 'px';
       btn.style.display = 'block';
-      event.stopPropagation();
     },
     hideBtn(event) {
-      if (event && event.type == 'click' && event.target && event.target.closest("#define-btn")) return;
+      if (event && event.type == 'pointerdown' && event.target && event.target.closest("#define-btn")) return;
       const btn = document.getElementById('define-btn');
       btn.style.display = 'none';
     },
-    looupWord () {
+    async lookupWord () {
+      const sel = window.getSelection();
+      if (!sel.isCollapsed) {
+        const range = document.createRange();
+        range.setStart(sel.anchorNode, sel.anchorOffset);
+        range.setEnd(sel.focusNode, sel.focusOffset);
+        const backwards = range.collapsed;
+        range.detach();
+
+        sel.collapse(sel.anchorNode, sel.anchorOffset);
+        let direction;
+        if (backwards)
+          direction = ['backward', 'forward'];
+        else
+          direction = ['forward', 'backward'];
+
+        sel.modify("move", direction[0], "character");
+        sel.modify('move', direction[1], "word");
+
+        sel.extend(sel.focusNode, sel.focusOffset);
+
+        sel.modify("extend", direction[1], "character");
+        sel.modify("extend", direction[0], "word");
+
+
+        const res = await fetch('https://od-api.oxforddictionaries.com/api/v1/entries/en/' + sel.toString(),
+                {method: 'GET', headers: {
+                  'app_id': "29600a63", 'app_key': "068306ea6dc529ff09d527ca7acdca72"}});
+        const json = await res.json();
+        console.log(json);
+      }
 
     }
   }
