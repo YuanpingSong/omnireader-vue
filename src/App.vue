@@ -118,9 +118,14 @@
 
 
           <!-- The define button, normally hidden -->
-            <v-btn @click="lookupWord" id="define-btn" color="warning" fab dark>
-              <v-icon>language</v-icon>
-            </v-btn>
+            <v-dialog v-model="dictionaryDialog" width="70vw">
+              <v-btn slot="activator" @click="lookupWord" id="define-btn" color="warning" fab dark>
+                <v-icon>language</v-icon>
+              </v-btn>
+
+              <dictionary-view v-model="dictionaryJson"></dictionary-view>
+            </v-dialog>
+
 
 
 
@@ -139,9 +144,11 @@
 
 <script>
 
+import DictionaryView from "./components/dictionaryView";
 export default {
   name: 'App',
   components: {
+    DictionaryView
     //
   },
   mounted () {
@@ -149,8 +156,15 @@ export default {
     document.addEventListener('scroll', this.hideBtn);
     document.addEventListener('pointerdown', this.hideBtn);
   },
+  watch: {
+    dictionaryDialog: function() {
+      if (this.dictionaryDialog == false) this.dictionaryJson = undefined;
+    }
+  },
   data () {
     return {
+      dictionaryJson: undefined,
+      dictionaryDialog: false,
       controlsState :['none', 'none', 'none', 'none'],
       font: "Helvetica",
       align: "left",
@@ -257,10 +271,10 @@ export default {
         sel.modify("extend", direction[0], "word");
 
 
-        const res = await fetch('https://od-api.oxforddictionaries.com/api/v1/entries/en/' + sel.toString(),
-                {method: 'GET', headers: {
-                  'app_id': "29600a63", 'app_key': "068306ea6dc529ff09d527ca7acdca72"}});
+        console.log('sent request to server for word: ' + sel.toString());
+        const res = await fetch('http://localhost:3000/dict/' + sel.toString().toLowerCase(), {method: 'GET'});
         const json = await res.json();
+        this.dictionaryJson = json;
         console.log(json);
       }
 

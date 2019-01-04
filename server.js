@@ -31,10 +31,15 @@ const wordlist_5500 = require('./graduate_5500.json');
 const set_5500 = new Set(wordlist_5500);
 
 
-// Oxford Dictionary API Meta
-const od_baseurl = 'https://od-api.oxforddictionaries.com/api/v1/entries/en/';
-const od_app_id = '29600a63';
-const od_app_key = '068306ea6dc529ff09d527ca7acdca72';
+// Words API Meta
+const wd_baseurl = 'https://wordsapiv1.p.rapidapi.com/words/';
+const wd_app_key = '966008f0aamshb26b4e37b0d7392p1a2787jsn6d2648d061fc';
+
+// This middle where sets cors in response
+const cors = require('cors');
+
+// Node implementation of fetch API
+const fetch = require('node-fetch');
 
 (async function() {
     try {
@@ -76,7 +81,10 @@ async function lookupWord(word) {
 
 
 async function getLemma(word) {
-    return word;
+    const sent = new CoreNLP.default.simple.Sentence(word);
+    const parsetResult = await pipeline.annotate(sent);
+    console.log(parsetResult.lemma(0));
+    return parsetResult.lemma(0);
 }
 
 
@@ -84,15 +92,15 @@ async function lookupOxford(req, res) {
     const routeParams = req.params;
     const word = routeParams.word;
     const lemma = await getLemma(word);
-    const od_res = await fetch(od_baseurl + lemma, {method: 'GET', headers: {
-        app_id: od_app_id, app_key: od_app_key
-        }})
+    console.log('sending request for: ' + word);
+    const od_res = await fetch(wd_baseurl + lemma, {method: 'GET', headers: { "X-RapidAPI-Key": wd_app_key}});
+    console.log('request for: ' + word +' is received');
     const json = await od_res.json();
-    res.header.
+    res.json(json);
 }
 
 
-app.get('/dict/:word', lookupOxford);
+app.get('/dict/:word',cors(), lookupOxford);
 
 async function onReceiveArticle(req, res) {
     if (!req.body) return res.sendStatus(400);

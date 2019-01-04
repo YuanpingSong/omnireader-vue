@@ -9,8 +9,10 @@
   },
   "dependencies": {
     "corenlp": "^1.5.0",
+    "cors": "^2.8.5",
     "keen-ui": "^1.0.1",
     "mongodb": "^3.1.10",
+    "node-fetch": "^2.3.0",
     "vue": "^2.5.17",
     "vuetify": "^1.3.0"
   },
