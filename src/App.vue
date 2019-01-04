@@ -275,7 +275,7 @@ export default {
         console.log('sent request to server for word: ' + sel.toString());
         const res = await fetch('http://localhost:3000/dict/' + sel.toString().toLowerCase(), {method: 'GET'});
         const json = await res.json();
-        this.dictionaryJson = json;
+        this.dictionaryJson = [json];
         console.log(json);
       }
 

@@ -3,8 +3,19 @@
         <div class="transition-container" v-if="!value">
             <div class="transition-bounding-rect"><v-progress-circular size="48" indeterminate color="red"></v-progress-circular></div>
         </div>
+
         <div v-if="value" class="definition-container">
-            <v-card-title primary-title>
+
+            <div  v-if="value.length > 1">
+                <v-breadcrumbs class="pb-0 pl-3 neg-bottom-margin" v-bind:items="breadcrumbItems" divider=">">
+                    <template slot="item" slot-scope="props">
+                        <button class="blue-grey--text" @click="popUntil(props.item.text)">{{props.item.text}}</button>
+                    </template>
+                </v-breadcrumbs>
+            </div>
+
+
+            <v-card-title class="pt-4" primary-title>
                 <div>
                     <h3 class="headline mb-0">{{word}}</h3>
                     <div v-if="pronunciation">/{{pronunciation}}/</div>
@@ -41,7 +52,7 @@
                             <v-layout>
                                 <v-flex xs2><v-card-text class="attribute">Synonyms:</v-card-text></v-flex>
                                 <v-flex xs10>
-                                    <v-card-text class="word-list" v-for="synonym in result.synonyms"><a>{{synonym}}</a></v-card-text>
+                                    <v-card-text class="word-list" v-for="synonym in result.synonyms"><button class="blue-grey--text" @click="pushWord(synonym)">{{synonym}}</button></v-card-text>
                                 </v-flex>
                             </v-layout>
                         </v-flex>
@@ -50,7 +61,7 @@
                         <v-flex xs12 v-if="result.antonyms">
                             <v-layout>
                                 <v-flex xs2><v-card-text class="attribute">Antonyms:</v-card-text></v-flex>
-                                <v-flex xs10><v-card-text class="word-list" v-for="antonym in result.antonyms"><a>{{antonym}}</a></v-card-text></v-flex>
+                                <v-flex xs10><v-card-text class="word-list" v-for="antonym in result.antonyms"><button class="blue-grey--text" @click="pushWord(antonym)">{{antonym}}</button></v-card-text></v-flex>
                             </v-layout>
                         </v-flex>
 
@@ -58,7 +69,7 @@
                             <v-layout>
                                 <v-flex xs2><v-card-text class="attribute">Type of:</v-card-text></v-flex>
                                 <v-flex xs10>
-                                    <v-card-text class="word-list" v-for="type in result.typeOf"><a>{{type}}</a></v-card-text>
+                                    <v-card-text class="word-list" v-for="type in result.typeOf"><button class="blue-grey--text" @click="pushWord(type)">{{type}}</button></v-card-text>
                                 </v-flex>
                             </v-layout>
                         </v-flex>
@@ -67,7 +78,7 @@
                             <v-layout>
                                 <v-flex xs2><v-card-text class="attribute">Types:</v-card-text></v-flex>
                                 <v-flex xs10 overflow-hidden>
-                                    <v-card-text class="word-list" v-for="type in result.hasTypes"><a>{{type}}</a></v-card-text>
+                                    <v-card-text class="word-list" v-for="type in result.hasTypes"><button class="blue-grey--text" @click="pushWord(type)">{{type}}</button></v-card-text>
                                 </v-flex>
                             </v-layout>
                         </v-flex>
@@ -164,16 +175,45 @@
                 word: "",
                 pronunciation: "",
                 results: [],
-                panel: [true]
+                panel: [true],
+                items: [
+                    {
+                        text: 'Dashboard',
+                        disabled: false,
+                        href: 'breadcrumbs_dashboard'
+                    },
+                    {
+                        text: 'Link 1',
+                        disabled: false,
+                        href: 'breadcrumbs_link_1'
+                    },
+                    {
+                        text: 'Link 2',
+                        disabled: true,
+                        href: 'breadcrumbs_link_2'
+                    }
+                ]
+            }
+        },
+        computed: {
+            breadcrumbItems: function () {
+                const ans = [];
+                const lastIdx = this.value.length - 1;
+                for (let i = 0; i < this.value.length; i++) {
+                    ans.push({text: this.value[i].word, disabled: i == lastIdx});
+                }
+                console.log(ans);
+                return ans;
             }
         },
         watch: {
            value: function () {
                console.log('hi');
                if (this.value) {
-                   this.word = this.value.word;
-                   if (this.value.pronunciation) {
-                       const p = this.value.pronunciation;
+                   const elt = this.value[this.value.length -1];
+                   this.word = elt.word;
+                   if (elt.pronunciation) {
+                       const p = elt.pronunciation;
                        if (typeof p === 'object') {
                            this.pronunciation = Object.values(p)[0];
                        } else {
@@ -182,8 +222,8 @@
                    } else {
                        this.pronunciation = "";
                    }
-                   if (this.value.results ) {
-                       this.results = this.value.results;
+                   if (elt.results ) {
+                       this.results = elt.results;
                    }
                } else {
                    this.word = "";
@@ -240,7 +280,20 @@
             close: function () {
                 const event = new Event('closeDictionary');
                 document.dispatchEvent(event);
+            },
+            popUntil: function (word) {
+                while (this.value[this.value.length -1 ].word != word) {
+                    this.value.pop();
+
+                }
+            },
+            pushWord: async function (word) {
+                console.log('hello ');
+                const res = await fetch('http://localhost:3000/dict/' + word, {method: 'GET'});
+                const json = await res.json();
+                this.value.push(json);
             }
+
 
         }
 
@@ -317,6 +370,10 @@
 
     .justify-right {
         justify-content: flex-end;
+    }
+
+    .neg-bottom-margin {
+        margin-bottom: -20px;
     }
 
 </style>
