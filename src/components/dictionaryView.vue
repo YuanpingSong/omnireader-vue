@@ -14,14 +14,14 @@
             <v-divider class="hr-bold"></v-divider>
 
 
-
-            <v-layout row wrap> <!-- contains all definitions-->
-                <v-flex xs12 v-for="result in results"> <!-- a single definition-->
-                    <v-flex xs12>
+            <v-expansion-panel expand class="no-box-shadow">
+                <v-expansion-panel-content v-for="(result, i) in results" :key="i">
+                    <v-flex xs12 slot="header">
                         <v-layout row wrap> <!-- parts of speech and definition -->
                             <v-flex xs1> <!-- parts of speech -->
-                                <v-card-text class="white--text less-padding pos-offset">
-                                    <em class="d-inline-block" v-bind:style="{backgroundColor: colorize(result.partOfSpeech), padding: '0px 5px'}">{{condense(result.partOfSpeech)}}</em>
+                                <v-card-text class=" less-padding pos-offset">
+                                    {{i + 1}}
+                                    <em class="d-inline-block white--text" v-bind:style="{backgroundColor: colorize(result.partOfSpeech), padding: '0px 5px 0px 2px'}">{{condense(result.partOfSpeech)}}</em>
                                 </v-card-text>
                             </v-flex>
                             <v-flex xs11> <!-- definition -->
@@ -30,9 +30,71 @@
                         </v-layout>
                     </v-flex>
 
+                    <v-card>
+                        <v-divider class="hr-lighter" v-if="result.examples || result.synonyms || result.antonyms"></v-divider> <!-- divider between definition and the rest -->
+                        <v-flex xs12 v-if="result.examples"> <!-- example usage -->
+                            <blockquote class="font-weight-regular font-italic example-sentence">"{{result.examples ? result.examples[0] : ""}}"</blockquote>
+                        </v-flex>
 
-                    <v-divider class="hr-lighter" v-if="result.examples || result.synonyms || result.antonyms"></v-divider> <!-- divider between definition and the rest -->
-                    <v-flex xs12 v-if="result.examples"> <!-- example usage -->
+
+                        <v-flex xs12 v-if="result.synonyms">
+                            <v-layout>
+                                <v-flex xs2><v-card-text class="attribute">Synonyms:</v-card-text></v-flex>
+                                <v-flex xs10>
+                                    <v-card-text class="word-list" v-for="synonym in result.synonyms"><a>{{synonym}}</a></v-card-text>
+                                </v-flex>
+                            </v-layout>
+                        </v-flex>
+
+
+                        <v-flex xs12 v-if="result.antonyms">
+                            <v-layout>
+                                <v-flex xs2><v-card-text class="attribute">Antonyms:</v-card-text></v-flex>
+                                <v-flex xs10><v-card-text class="word-list" v-for="antonym in result.antonyms"><a>{{antonym}}</a></v-card-text></v-flex>
+                            </v-layout>
+                        </v-flex>
+
+                        <v-flex xs12 v-if="result.typeOf">
+                            <v-layout>
+                                <v-flex xs2><v-card-text class="attribute">Type of:</v-card-text></v-flex>
+                                <v-flex xs10>
+                                    <v-card-text class="word-list" v-for="type in result.typeOf"><a>{{type}}</a></v-card-text>
+                                </v-flex>
+                            </v-layout>
+                        </v-flex>
+
+                        <v-flex xs12 v-if="result.hasTypes">
+                            <v-layout>
+                                <v-flex xs2><v-card-text class="attribute">Types:</v-card-text></v-flex>
+                                <v-flex xs10 overflow-hidden>
+                                    <v-card-text class="word-list" v-for="type in result.hasTypes"><a>{{type}}</a></v-card-text>
+                                </v-flex>
+                            </v-layout>
+                        </v-flex>
+                    </v-card>
+                </v-expansion-panel-content>
+            </v-expansion-panel>
+
+
+            <!--
+            <v-layout row wrap>
+                <v-flex xs12 v-for="result in results">
+                    <v-flex xs12>
+                        <v-layout row wrap>
+                            <v-flex xs1>
+                                <v-card-text class="white--text less-padding pos-offset">
+                                    <em class="d-inline-block" v-bind:style="{backgroundColor: colorize(result.partOfSpeech), padding: '0px 5px'}">{{condense(result.partOfSpeech)}}</em>
+                                </v-card-text>
+                            </v-flex>
+                            <v-flex xs11>
+                                <v-card-text class="d-inline-block font-weight-medium less-padding">{{result.definition}}</v-card-text>
+                            </v-flex>
+                        </v-layout>
+                    </v-flex>
+
+
+                    <v-divider class="hr-lighter" v-if="result.examples || result.synonyms || result.antonyms"></v-divider>
+                    <v-flex xs12 v-if="result.examples">
                         <blockquote class="font-weight-regular font-italic example-sentence">"{{result.examples ? result.examples[0] : ""}}"</blockquote>
                     </v-flex>
 
@@ -71,14 +133,9 @@
                             </v-flex>
                         </v-layout>
                     </v-flex>
-
-                    <!--
-                    <v-divider class="hr-light"></v-divider>
-                    -->
                 </v-flex>
             </v-layout>
 
-            <!--
             <div v-for="(result) in results">
 
                 <v-card-text>
@@ -90,9 +147,9 @@
             -->
 
 
-            <v-card-actions>
-                <v-btn flat color="orange">Share</v-btn>
-                <v-btn flat color="orange">Explore</v-btn>
+            <v-card-actions class="justify-right">
+                <v-btn flat color="cyan">Add To Deck</v-btn>
+                <v-btn flat color="normal" @click="close">Close</v-btn>
             </v-card-actions>
         </div>
     </v-card>
@@ -106,7 +163,8 @@
             return {
                 word: "",
                 pronunciation: "",
-                results: []
+                results: [],
+                panel: [true]
             }
         },
         watch: {
@@ -151,6 +209,8 @@
                         return "pronoun";
                     case "conjunction":
                         return "conj";
+                    case "definite article": case "indefinite article":
+                        return 'artcl';
                     case null: case undefined:
                         return "";
                     default:
@@ -176,6 +236,10 @@
                     default:
                         return "#EDAE49";
                 }
+            },
+            close: function () {
+                const event = new Event('closeDictionary');
+                document.dispatchEvent(event);
             }
 
         }
@@ -206,7 +270,8 @@
     }
 
     .pos-offset {
-        padding-left: 16px;
+        padding-left: 6px;
+        width: auto;
     }
 
     .hr-bold {
@@ -243,6 +308,15 @@
         padding: 6px 6px 6px 30px;
         color: grey;
 
+    }
+
+    .no-box-shadow {
+        box-shadow: none;
+    }
+
+
+    .justify-right {
+        justify-content: flex-end;
     }
 
 </style>

@@ -155,6 +155,7 @@ export default {
     console.log('mounted');
     document.addEventListener('scroll', this.hideBtn);
     document.addEventListener('pointerdown', this.hideBtn);
+    document.addEventListener('closeDictionary', this.closeDict);
   },
   watch: {
     dictionaryDialog: function() {
@@ -278,6 +279,10 @@ export default {
         console.log(json);
       }
 
+    },
+    closeDict() {
+      this.dictionaryJson = undefined;
+      this.dictionaryDialog = false;
     }
   }
 }
