@@ -13,8 +13,10 @@ const url = 'mongodb://localhost:27017';
 // Database Name
 const db_name = 'dictionary';
 const collection_name = 'definitions';
+const cache_collection_name = 'dictionary_cache';
 const client = new MongoClient(url);
 let col = null; // collection, to be initialized
+let cache_col = null;
 
 // Express Setup
 const express = require('express');
@@ -41,12 +43,16 @@ const cors = require('cors');
 // Node implementation of fetch API
 const fetch = require('node-fetch');
 
+// Assert Library
+const assert = require('assert');
+
 (async function() {
     try {
         await client.connect();
         console.log('Connected correctly to database');
         const db = client.db(db_name);
         col = db.collection(collection_name);
+        cache_col = db.collection(cache_collection_name);
     } catch(err) {
         console.log(err.stack);
     }
@@ -92,11 +98,27 @@ async function lookupOxford(req, res) {
     const routeParams = req.params;
     const word = routeParams.word;
     const lemma = await getLemma(word);
-    console.log('sending request for: ' + word);
-    const od_res = await fetch(wd_baseurl + lemma, {method: 'GET', headers: { "X-RapidAPI-Key": wd_app_key}});
-    console.log('request for: ' + word +' is received');
-    const json = await od_res.json();
-    res.json(json);
+
+    const cursor = cache_col.find({word: lemma});
+    const result = await cursor.next();
+    if (!result) {
+
+        console.log('cache miss: ' + lemma);
+
+        const od_res = await fetch(wd_baseurl + lemma, {method: 'GET', headers: { "X-RapidAPI-Key": wd_app_key}});
+        const json = await od_res.json();
+        let r = await cache_col.insertOne(json);
+        assert.equal(1, r.insertedCount);
+        res.json(json);
+
+        console.log("stored into cache: " + json);
+    } else {
+        console.log('cache hit: ' + lemma);
+        res.json(result);
+    }
+
+
+
 }
 
 

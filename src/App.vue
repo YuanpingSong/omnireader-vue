@@ -54,6 +54,12 @@
 
 
         <!-- The welcome screen -->
+        <welcome-view v-if="inputViewDisplay"
+                      file-upload-event-handler="onSubmitClick"
+                      submit-text-event-handler="onSubmitClick"
+                      submit-u-r-l-event-handler="onSubmitClick">
+        </welcome-view>
+        <!--
         <div id="input-view" v-bind:style="{display: inputViewDisplay}">
           <v-textarea name="input-article" auto-grow box autofocus v-model="textarea"></v-textarea>
           <div class="text-xs-right">
@@ -61,7 +67,7 @@
             <v-btn :loading="loadingSubmit" :disabled="loadingSubmit" @click="onSubmitClick"> Submit </v-btn>
           </div>
         </div>
-
+        -->
 
 
 
@@ -145,10 +151,12 @@
 <script>
 
 import DictionaryView from "./components/dictionaryView";
+import WelcomeView from "./components/welcomeView";
 export default {
   name: 'App',
   components: {
-    DictionaryView
+    DictionaryView,
+    WelcomeView
     //
   },
   mounted () {
@@ -171,7 +179,7 @@ export default {
       align: "left",
       columnWidth: "70",
       textSize: "1.5",
-      inputViewDisplay: 'block',
+      inputViewDisplay: true,
       readerViewDisplay: 'none',
       transitionViewDisplay: 'none',
       loadingUpload : false,
@@ -192,10 +200,10 @@ export default {
       this.loadingUpload = false;
     },
     async onSubmitClick () {
-      this.inputViewDisplay = "none";
+      this.inputViewDisplay = false;
       this.transitionViewDisplay = "flex";
 
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       this.transitionViewDisplay = "none";
       this.readerViewDisplay = "flex";
 
@@ -273,8 +281,27 @@ export default {
 
 
         console.log('sent request to server for word: ' + sel.toString());
-        const res = await fetch('http://localhost:3000/dict/' + sel.toString().toLowerCase(), {method: 'GET'});
+        let res;
+        try {
+          res = await fetch('http://localhost:3000/dict/' + sel.toString().toLowerCase(), {method: 'GET'});
+        } catch (error) {
+          this.dictionaryJson = [null];
+          console.log(error);
+          return;
+        }
+
+        console.log('status code is ');
+        console.log(res.status);
+
+        if (res.status != 200) {
+          this.dictionaryJson = [null];
+          return;
+        }
         const json = await res.json();
+        if (json.message == "word not found") {
+          this.dictionaryJson = [null];
+          return;
+        }
         this.dictionaryJson = [json];
         console.log(json);
       }

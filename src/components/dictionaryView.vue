@@ -1,10 +1,26 @@
 <template>
     <v-card v-bind:value="value" v-on:input="$emit('input', $event.target.value)">
-        <div class="transition-container" v-if="!value">
-            <div class="transition-bounding-rect"><v-progress-circular size="48" indeterminate color="red"></v-progress-circular></div>
-        </div>
+        <v-container fluid class="text-xs-center transition-container" v-if="!value">
+            <v-progress-circular class="transition-bounding-rect" width="2" size="48" indeterminate color="red"></v-progress-circular>
+        </v-container>
 
-        <div v-if="value" class="definition-container">
+        <v-progress-linear class="pb-0 mb-0" color="cyan lighten-3" v-if="onLoad" :indeterminate="true"></v-progress-linear>
+
+
+        <v-container fluid justify-center align-center align-content-space-around v-if="hasError">
+
+                <div class="text-xs-center">
+                    <h1 class="fourOfour">404</h1>
+                    <h1 class="headline fourOfour-line-padding">Oops... We couldn't define this word!</h1>
+                    <h1 class="headline fourOfour-line-padding">༼∵༽ ༼⍨༽ ༼⍢༽ ༼⍤༽</h1>
+                </div>
+
+            <v-card-actions class="justify-right">
+                <v-btn flat color="normal" @click="close">Close</v-btn>
+            </v-card-actions>
+        </v-container>
+
+        <div v-if="value && (!hasError)" class="definition-container">
 
             <div  v-if="value.length > 1">
                 <v-breadcrumbs class="pb-0 pl-3 neg-bottom-margin" v-bind:items="breadcrumbItems" divider=">">
@@ -36,7 +52,10 @@
                                 </v-card-text>
                             </v-flex>
                             <v-flex xs11> <!-- definition -->
-                                <v-card-text class="d-inline-block font-weight-medium less-padding">{{result.definition}}</v-card-text>
+                                <v-card-text class="d-inline-block font-weight-medium less-padding">
+                                    <!--{{result.definition}}-->
+                                    <button class="pr-1" v-for="word in result.definition.split(' ')" @click="pushWord(word, $event)">{{word}}</button>
+                                </v-card-text>
                             </v-flex>
                         </v-layout>
                     </v-flex>
@@ -176,23 +195,8 @@
                 pronunciation: "",
                 results: [],
                 panel: [true],
-                items: [
-                    {
-                        text: 'Dashboard',
-                        disabled: false,
-                        href: 'breadcrumbs_dashboard'
-                    },
-                    {
-                        text: 'Link 1',
-                        disabled: false,
-                        href: 'breadcrumbs_link_1'
-                    },
-                    {
-                        text: 'Link 2',
-                        disabled: true,
-                        href: 'breadcrumbs_link_2'
-                    }
-                ]
+                onLoad: false,
+                hasError: false
             }
         },
         computed: {
@@ -200,7 +204,7 @@
                 const ans = [];
                 const lastIdx = this.value.length - 1;
                 for (let i = 0; i < this.value.length; i++) {
-                    ans.push({text: this.value[i].word, disabled: i == lastIdx});
+                    ans.push({text: (this.value[i] == null) ? "404" : this.value[i].word, disabled: i == lastIdx});
                 }
                 console.log(ans);
                 return ans;
@@ -208,9 +212,17 @@
         },
         watch: {
            value: function () {
+               this.hasError = false;
                console.log('hi');
                if (this.value) {
+                   console.log('i am here');
                    const elt = this.value[this.value.length -1];
+                   console.log(elt);
+                   if (elt == null) {
+                       console.log('has error');
+                       this.hasError = true;
+                       return;
+                   }
                    this.word = elt.word;
                    if (elt.pronunciation) {
                        const p = elt.pronunciation;
@@ -278,20 +290,49 @@
                 }
             },
             close: function () {
+                this.hasError = false;
                 const event = new Event('closeDictionary');
                 document.dispatchEvent(event);
             },
             popUntil: function (word) {
+                if (this.hasError && (word == '404')) {
+                    return;
+                }
+                if (this.hasError) {
+                    this.value.pop();
+                }
                 while (this.value[this.value.length -1 ].word != word) {
                     this.value.pop();
-
                 }
             },
-            pushWord: async function (word) {
+            pushWord: async function (word, event) {
+                if (event) event.stopPropagation();
+                this.onLoad = true;
                 console.log('hello ');
-                const res = await fetch('http://localhost:3000/dict/' + word, {method: 'GET'});
+                let res;
+                try {
+                    res = await fetch('http://localhost:3000/dict/' + word, {method: 'GET'});
+                } catch (error) {
+                    this.value.push(null);
+                    console.log(error);
+                    return;
+                }
+                if (res.status != 200) {
+                    this.value.push(null);
+                    return;
+                }
+
+
+
                 const json = await res.json();
+
+                if (json.message == "word not found") {
+                    this.value.push(null);
+                    return;
+                }
+
                 this.value.push(json);
+                this.onLoad = false;
             }
 
 
@@ -308,9 +349,7 @@
     }
 
     .transition-bounding-rect {
-        position: absolute;
-        top: 23vh;
-        left: 30vw;
+        margin-top: 20vh;
     }
 
     .definition-container {
@@ -375,5 +414,16 @@
     .neg-bottom-margin {
         margin-bottom: -20px;
     }
+
+    .fourOfour {
+        font-size: 1500%;
+        font-weight: lighter;
+        font-family: Helvetica;
+    }
+
+    .fourOfour-line-padding {
+        padding: 15px;
+    }
+
 
 </style>
