@@ -48,7 +48,7 @@
 
 
     <v-content>
-      <v-container fluid>
+      <v-container fluid >
 
 
 
@@ -132,13 +132,6 @@
               <dictionary-view v-model="dictionaryJson"></dictionary-view>
             </v-dialog>
 
-
-
-
-
-
-
-
         </div>
 
 
@@ -164,6 +157,8 @@ export default {
     document.addEventListener('scroll', this.hideBtn);
     document.addEventListener('pointerdown', this.hideBtn);
     document.addEventListener('closeDictionary', this.closeDict);
+    document.addEventListener('submit_text', this.onSubmitText);
+    document.addEventListener('submit_url', this.onSubmitUrl);
   },
   watch: {
     dictionaryDialog: function() {
@@ -199,7 +194,7 @@ export default {
       await new Promise(resolve => setTimeout(resolve, 2000));
       this.loadingUpload = false;
     },
-    async onSubmitClick () {
+    async onSubmitText (event) {
       this.inputViewDisplay = false;
       this.transitionViewDisplay = "flex";
 
@@ -208,12 +203,52 @@ export default {
       this.readerViewDisplay = "flex";
 
       const readerContent= document.querySelector(".reader-view .reader-content");
-      const paragraphArray = this.textarea.replace(/\n+/g, "\n").replace(/ +/g, " ").split('\n');
+      const paragraphArray = event.detail.replace(/\n+/g, "\n").replace(/ +/g, " ").split('\n');
       for (const paragraph of paragraphArray) {
         const p = document.createElement('p');
         p.innerText = paragraph;
         readerContent.appendChild(p);
       }
+    },
+    async onSubmitUrl (event) {
+      this.inputViewDisplay = false;
+      this.transitionViewDisplay = "flex";
+      const url = event.detail;
+
+      try {
+        const res = await fetch('http://localhost:3000/api/webparser?url=' + url, {method: 'GET'} );
+        var json = await res.json();
+      } catch(err) {
+        await this.onSubmitUrl(event);
+        return;
+      }
+
+      const readerContent= document.querySelector(".reader-view .reader-content");
+      if (json.hasOwnProperty('title')) {
+        const t = document.createElement('h1');
+        t.innerText = json['title'];
+        readerContent.appendChild(t);
+      }
+
+      if (json.hasOwnProperty('author')) {
+        const em = document.createElement('em');
+        em.innerText = json['author'];
+        readerContent.appendChild(em);
+        const br = document.createElement('br');
+        readerContent.appendChild(br);
+      }
+
+      if (json.hasOwnProperty('lead_image_url')) {
+        const img = document.createElement('img');
+        img.src = json['lead_image_url'];
+        img.style.maxHeight = '90%';
+        img.style.maxWidth = '90%';
+        readerContent.appendChild(img);
+      }
+
+      readerContent.innerHTML = readerContent.innerHTML + json['content'];
+      this.transitionViewDisplay = "none";
+      this.readerViewDisplay = "flex";
     },
     controlItemOnClick (selector) {
       for (let i = 0; i < 4; i++) {

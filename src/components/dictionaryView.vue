@@ -105,78 +105,6 @@
                 </v-expansion-panel-content>
             </v-expansion-panel>
 
-
-            <!--
-            <v-layout row wrap>
-                <v-flex xs12 v-for="result in results">
-                    <v-flex xs12>
-                        <v-layout row wrap>
-                            <v-flex xs1>
-                                <v-card-text class="white--text less-padding pos-offset">
-                                    <em class="d-inline-block" v-bind:style="{backgroundColor: colorize(result.partOfSpeech), padding: '0px 5px'}">{{condense(result.partOfSpeech)}}</em>
-                                </v-card-text>
-                            </v-flex>
-                            <v-flex xs11>
-                                <v-card-text class="d-inline-block font-weight-medium less-padding">{{result.definition}}</v-card-text>
-                            </v-flex>
-                        </v-layout>
-                    </v-flex>
-
-
-                    <v-divider class="hr-lighter" v-if="result.examples || result.synonyms || result.antonyms"></v-divider>
-                    <v-flex xs12 v-if="result.examples">
-                        <blockquote class="font-weight-regular font-italic example-sentence">"{{result.examples ? result.examples[0] : ""}}"</blockquote>
-                    </v-flex>
-
-
-                    <v-flex xs12 v-if="result.synonyms">
-                        <v-layout>
-                            <v-flex xs2><v-card-text class="attribute">Synonyms:</v-card-text></v-flex>
-                            <v-flex xs10>
-                                <v-card-text class="word-list" v-for="synonym in result.synonyms"><a>{{synonym}}</a></v-card-text>
-                            </v-flex>
-                        </v-layout>
-                    </v-flex>
-
-
-                    <v-flex xs12 v-if="result.antonyms">
-                        <v-layout>
-                            <v-flex xs2><v-card-text class="attribute">Antonyms:</v-card-text></v-flex>
-                            <v-flex xs10><v-card-text class="word-list" v-for="antonym in result.antonyms"><a>{{antonym}}</a></v-card-text></v-flex>
-                        </v-layout>
-                    </v-flex>
-
-                    <v-flex xs12 v-if="result.typeOf">
-                        <v-layout>
-                            <v-flex xs2><v-card-text class="attribute">Type of:</v-card-text></v-flex>
-                            <v-flex xs10>
-                                <v-card-text class="word-list" v-for="type in result.typeOf"><a>{{type}}</a></v-card-text>
-                            </v-flex>
-                        </v-layout>
-                    </v-flex>
-
-                    <v-flex xs12 v-if="result.hasTypes">
-                        <v-layout>
-                            <v-flex xs2><v-card-text class="attribute">Types:</v-card-text></v-flex>
-                            <v-flex xs10 overflow-hidden>
-                                <v-card-text class="word-list" v-for="type in result.hasTypes"><a>{{type}}</a></v-card-text>
-                            </v-flex>
-                        </v-layout>
-                    </v-flex>
-                </v-flex>
-            </v-layout>
-
-            <div v-for="(result) in results">
-
-                <v-card-text>
-                    <em v-bind:style="{backgroundColor: colorize(result.partOfSpeech)}">{{result.partOfSpeech}}</em>
-                    {{result.definition}}
-                    <v-divider></v-divider>
-                </v-card-text>
-            </div>
-            -->
-
-
             <v-card-actions class="justify-right">
                 <v-btn flat color="cyan">Add To Deck</v-btn>
                 <v-btn flat color="normal" @click="close">Close</v-btn>
@@ -206,20 +134,15 @@
                 for (let i = 0; i < this.value.length; i++) {
                     ans.push({text: (this.value[i] == null) ? "404" : this.value[i].word, disabled: i == lastIdx});
                 }
-                console.log(ans);
                 return ans;
             }
         },
         watch: {
            value: function () {
                this.hasError = false;
-               console.log('hi');
                if (this.value) {
-                   console.log('i am here');
                    const elt = this.value[this.value.length -1];
-                   console.log(elt);
                    if (elt == null) {
-                       console.log('has error');
                        this.hasError = true;
                        return;
                    }
@@ -308,21 +231,17 @@
             pushWord: async function (word, event) {
                 if (event) event.stopPropagation();
                 this.onLoad = true;
-                console.log('hello ');
                 let res;
                 try {
                     res = await fetch('http://localhost:3000/dict/' + word, {method: 'GET'});
                 } catch (error) {
                     this.value.push(null);
-                    console.log(error);
                     return;
                 }
                 if (res.status != 200) {
                     this.value.push(null);
                     return;
                 }
-
-
 
                 const json = await res.json();
 
@@ -334,10 +253,7 @@
                 this.value.push(json);
                 this.onLoad = false;
             }
-
-
         }
-
     }
 </script>
 
@@ -352,11 +268,6 @@
         margin-top: 20vh;
     }
 
-    .definition-container {
-
-    }
-
-
     .less-padding {
         padding: 6px;
     }
@@ -370,12 +281,6 @@
         margin: 0px 10px;
         border-width: 1px;
         border-color: rgb(0,0,0);
-    }
-
-    .hr-light {
-        margin: 0px 10px;
-        border-width: 0.5px;
-        border-color: #222222;
     }
 
     .hr-lighter {
