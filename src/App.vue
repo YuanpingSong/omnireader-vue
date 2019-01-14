@@ -242,7 +242,6 @@ export default {
       ],
       signUpTabState: 0,
       logInDialog: false,
-      logOutDialog: false,
       isLoggedIn: false,
       dictionaryJson: undefined,
       dictionaryDialog: false,
@@ -293,7 +292,7 @@ export default {
       const url = event.detail;
 
       try {
-        const res = await fetch('http://localhost:3000/api/webparser?url=' + url, {method: 'GET'} );
+        const res = await fetch('http://localhost:3000/api/webparser?url=' + url, {method: 'GET', credentials: 'include'} );
         var json = await res.json();
       } catch(err) {
         await this.onSubmitUrl(event);
@@ -395,7 +394,7 @@ export default {
         console.log('sent request to server for word: ' + sel.toString());
         let res;
         try {
-          res = await fetch('http://localhost:3000/dict/' + sel.toString().toLowerCase(), {method: 'GET'});
+          res = await fetch('http://localhost:3000/dict/' + sel.toString().toLowerCase(), {method: 'GET', credentials: 'include'});
         } catch (error) {
           this.dictionaryJson = [null];
           console.log(error);
@@ -435,14 +434,14 @@ export default {
       console.log('attempting to logout');
       let json = undefined;
       try {
-        const res = await fetch('http://localhost:3000/logout');
+        const res = await fetch('http://localhost:3000/logout', {credentials: 'include'});
         json = await res.json();
       } catch (error) {
         console.log('encountered error while logging out');
         return;
       }
-      if (json.status && json.status == 0) {
-        consle.log('here');
+      if (json.status == 0) {
+        console.log('here');
         this.isLoggedIn = false;
         this.snackbar = true;
         this.snackbar_text = 'Successfully Logged Out!';
@@ -456,11 +455,27 @@ export default {
       event.preventDefault();
       event.stopPropagation();
       let payload = {
-        username: this.signUpName,
-        email: this.signUpEmail,
-        password: this.signUpPassword,
-        passwordConf: this.signUpConfirmPassword
+        logemail: this.loginEmail,
+        logpassword: this.loginPassword,
       };
+      let json = undefined;
+      try {
+        const res = await fetch('http://localhost:3000/login',
+                {method: 'POST', headers: {"Content-Type": "application/json"}, credentials: 'include', body: JSON.stringify(payload)} );
+        json = await res.json();
+      } catch (error) {
+        return;
+      }
+      if (json.username) {
+        this.snackbar = true;
+        this.snackbar_text = "Welcome back, " + json.username +"!";
+        this.isLoggedIn = true;
+        this.logInDialog = false;
+      } else {
+        this.snackbar = true;
+        this.snackbar_text = "Oops... can't log in with credential"
+      }
+
     },
     async onSignUpUser(event) {
       event.preventDefault();
@@ -486,6 +501,7 @@ export default {
                       // "Content-Type": "application/x-www-form-urlencoded",
                     },
                     body: JSON.stringify(payload),
+                    credentials: 'include',
                   });
           json = await res.json();
         } catch (err) {

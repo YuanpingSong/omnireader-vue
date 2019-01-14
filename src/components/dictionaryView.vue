@@ -233,7 +233,7 @@
                 this.onLoad = true;
                 let res;
                 try {
-                    res = await fetch('http://localhost:3000/dict/' + word, {method: 'GET'});
+                    res = await fetch('http://localhost:3000/dict/' + word, {method: 'GET', credentials: 'include'});
                 } catch (error) {
                     this.value.push(null);
                     return;

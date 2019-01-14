@@ -17,6 +17,12 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    words: {
+        type: [String]
+    },
+    articles: {
+        type: [String]
+    },
     /*passwordConf: {
         type: String,
         required: true,

@@ -73,7 +73,11 @@ app.use(session({
     })
 }));
 
-app.use(function(req, res, next) { res.header("Access-Control-Allow-Origin", "*"); res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept"); next(); });
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "http://localhost:8080");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Credentials", "true");
+    next(); });
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 // const routes = require('./router');
@@ -111,20 +115,37 @@ async function lookupOxford(req, res) {
 
         console.log('cache miss: ' + lemma);
 
-        const od_res = await fetch(wd_baseurl + lemma, {method: 'GET', headers: { "X-RapidAPI-Key": wd_app_key}});
-        const json = await od_res.json();
-        let r = await cache_col.insertOne(json);
-        assert.equal(1, r.insertedCount);
+        let json = undefined;
+        try {
+            const od_res = await fetch(wd_baseurl + lemma, {method: 'GET', headers: { "X-RapidAPI-Key": wd_app_key}});
+            json = await od_res.json();
+        } catch (error) {
+            console.log("Rapid API error");
+        }
+
+        try {
+            let r = await cache_col.insertOne(json);
+            assert.equal(1, r.insertedCount);
+            console.log("stored into cache: " + json);
+        } catch (error) {
+            console.log("Error inserting into DB");
+        }
+
+        if (json.success) {
+            console.log('success');
+            if (req.session.userId) {
+                User.findByIdAndUpdate(req.session.userId, {$push: {words: word}});
+            }
+        }
         res.json(json);
 
-        console.log("stored into cache: " + json);
     } else {
         console.log('cache hit: ' + lemma);
         res.json(result);
     }
 }
 
-app.get('/dict/:word',cors(), lookupOxford);
+app.get('/dict/:word', lookupOxford);
 
 async function onReceiveUrl(req, res) {
     const url = req.query.url;
@@ -202,19 +223,24 @@ const onLogin = function (req, res, next) {
             } else {
                 const payload = {status: 0};
                 req.session.userId = user._id;
-                return res.json(payload);
+
+                req.session.save(function () {console.log(req.session.userId); res.json(payload);});
+                return;
             }
         });
         // Case: logging on
     } else if (req.body.logemail && req.body.logpassword) {
         User.authenticate(req.body.logemail, req.body.logpassword, function (error, user) {
             if (error || !user) {
-                var err = new Error('Wrong email or password.');
-                err.status = 401;
-                return next(err);
+                const payload = {username: ""};
+                return res.json(payload);
             } else {
                 req.session.userId = user._id;
-                return res.redirect('/profile');
+                console.log(req.session.userId);
+                const payload = {username: user.username};
+                console.log('name is ' + user.username);
+                req.session.save(function () {res.json(payload);});
+                return;
             }
         });
     } else {
