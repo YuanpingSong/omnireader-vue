@@ -326,7 +326,7 @@ export default {
       const url = event.detail;
 
       try {
-        const res = await fetch('http://oreader.app/api/webparser?url=' + url, {method: 'GET', credentials: 'include'} );
+        const res = await fetch('/api/webparser?url=' + url, {method: 'GET', credentials: 'include'} );
         var json = await res.json();
       } catch(err) {
         await this.onSubmitUrl(event);
@@ -435,7 +435,7 @@ export default {
         console.log('sent request to server for word: ' + sel.toString());
         let res;
         try {
-          res = await fetch('http://oreader.app/dict/' + sel.toString().toLowerCase(), {method: 'GET', credentials: 'include'});
+          res = await fetch('/dict/' + sel.toString().toLowerCase(), {method: 'GET', credentials: 'include'});
         } catch (error) {
           this.dictionaryJson = [null];
           console.log(error);
@@ -475,7 +475,7 @@ export default {
       console.log('attempting to logout');
       let json = undefined;
       try {
-        const res = await fetch('http://oreader.app/logout', {credentials: 'include'});
+        const res = await fetch('/logout', {credentials: 'include'});
         json = await res.json();
       } catch (error) {
         console.log('encountered error while logging out');
@@ -502,7 +502,7 @@ export default {
       };
       let json = undefined;
       try {
-        const res = await fetch('http://oreader.app/login',
+        const res = await fetch('/login',
                 {method: 'POST', headers: {"Content-Type": "application/json"}, credentials: 'include', body: JSON.stringify(payload)} );
         json = await res.json();
       } catch (error) {
@@ -536,7 +536,7 @@ export default {
         let json = undefined;
         try {
           const res = await fetch(
-                  'http://oreader.app/login',
+                  '/login',
                   {
                     method: 'POST',
                     headers: {

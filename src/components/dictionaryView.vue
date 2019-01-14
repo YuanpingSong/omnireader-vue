@@ -233,7 +233,7 @@
                 this.onLoad = true;
                 let res;
                 try {
-                    res = await fetch('http://oreader.app/dict/' + word, {method: 'GET', credentials: 'include'});
+                    res = await fetch('/dict/' + word, {method: 'GET', credentials: 'include'});
                 } catch (error) {
                     this.value.push(null);
                     return;
