@@ -387,8 +387,8 @@ const onLogOut = function (req, res, next) {
 
 app.get('/logout', onLogOut);
 
-app.listen(3000, function () {
-    console.log('Server listening on port 3000');
+app.listen(80, function () {
+    console.log('Server listening on port 80');
 });
 
 client.close();
