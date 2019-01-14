@@ -31,7 +31,7 @@ let web_cache_col = null;
 // Express Setup
 const express = require('express');
 const app = express();
-app.use(express.static('public'));
+app.use(express.static('dist'));
 
 // Words API Meta
 const wd_baseurl = 'https://wordsapiv1.p.rapidapi.com/words/';
@@ -99,7 +99,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 async function getLemma(word) {
     const sent = new CoreNLP.default.simple.Sentence(word);
     const parsetResult = await pipeline.annotate(sent);
-    console.log(parsetResult.lemma(0));
+    // console.log(parsetResult.lemma(0));
     return parsetResult.lemma(0);
 }
 
@@ -112,10 +112,10 @@ async function lookupOxford(req, res) {
     const cursor = cache_col.find({word: lemma});
     const result = await cursor.next();
 
-    console.log(req.session.userId);
+    // console.log(req.session.userId);
     if (!result) {
 
-        console.log('cache miss: ' + lemma);
+        console.log('dictionary cache miss: ' + lemma);
 
         let json = undefined;
         try {
@@ -130,7 +130,7 @@ async function lookupOxford(req, res) {
         try {
             let r = await cache_col.insertOne(json);
             assert.equal(1, r.insertedCount);
-            console.log("stored into cache: " + json);
+            // console.log("stored into cache: " + json);
         } catch (error) {
             console.log("Error inserting into DB");
             res.json({success: false});
@@ -139,7 +139,7 @@ async function lookupOxford(req, res) {
         //console.log('A');
         // console.log(json);
         if (json.word) {
-            console.log('success');
+            // console.log('success');
             if (req.session.userId) {
                 await User.findByIdAndUpdate(req.session.userId, {$push: {words: lemma}});
             }
@@ -147,7 +147,7 @@ async function lookupOxford(req, res) {
         res.json(json);
 
     } else {
-        // console.log('cache hit: ' + lemma);
+        console.log('dictionary cache hit: ' + lemma);
         if (req.session.userId) {
             await User.findByIdAndUpdate(req.session.userId, {$push: {words: lemma}});
         }
@@ -164,7 +164,7 @@ async function onReceiveUrl(req, res) {
     let json = null;
     // console.log(result);
     if (!result) {
-        console.log('web cache miss');
+        console.log('web cache miss: ' + url);
         const req_url = 'https://mercury.postlight.com/parser?url=' + url;
         try {
             const response = await fetch(req_url, { headers: {'Content-Type': 'application/json', 'x-api-key': 'l8akgvjMd0hVZTc0vhURx2yOvRsVi8HberbUt89q'}});
@@ -180,7 +180,7 @@ async function onReceiveUrl(req, res) {
             await User.findByIdAndUpdate(req.session.userId, {$push: {articles: json.url}});
         }
     } else {
-        console.log('web cache hit');
+        console.log('web cache hit: ' + url);
         try {
             await web_cache_col.update(
                 {url: url},
@@ -234,19 +234,19 @@ async function onGetCards (req, res) {
         }
 
         let cardlist = user.cards;
-        console.log(cardlist);
+        // console.log(cardlist);
 
         let json = {cards: []};
         for (let card of cardlist) {
-            console.log('Hi');
+            // console.log('Hi');
             const cursor = cache_col.find({word: card});
             const result = await cursor.next();
             if (result) {
-                console.log('Hi');
+                // console.log('Hi');
                 json.cards.push(result);
             }
         }
-        console.log(json);
+        // console.log(json);
         res.json({...json, status: 0});
     } else {
         res.json({status: 1});
@@ -275,20 +275,20 @@ async function onGetArticles (req, res) {
         }
 
         let articlelist = user.articles;
-        console.log(articlelist);
+        // console.log(articlelist);
 
         let json = {articles: []};
         for (let article of articlelist) {
-            console.log('Hi');
+            // console.log('Hi');
             const cursor = web_cache_col.find({url: article});
             const result = await cursor.next();
             if (result) {
-                console.log('Hi');
+                // console.log('Hi');
                 result.content = "";
                 json.articles.push(result);
             }
         }
-        console.log(json);
+        // console.log(json);
         res.json({...json, status: 0});
     } else {
         res.json({status: 1});
@@ -307,7 +307,7 @@ app.use(function(req, res, next) {
 
 
 const onLogin = function (req, res, next) {
-    console.log(req.body);
+    // console.log(req.body);
     // confirm that user typed same password twice
     if (req.body.password !==req.body.passwordConf) {
         var err = new Error('Passwords do not match.');
@@ -347,9 +347,10 @@ const onLogin = function (req, res, next) {
                 return res.json(payload);
             } else {
                 req.session.userId = user._id;
-                console.log(req.session.userId);
+                const dt = new Date();
+                console.log('User Logged On: ' + req.session.userId + ", at: " + dt);
                 const payload = {username: user.username};
-                console.log('name is ' + user.username);
+                // console.log('name is ' + user.username);
                 req.session.save(function () {res.json(payload);});
                 return;
             }
@@ -364,15 +365,18 @@ const onLogin = function (req, res, next) {
 app.post('/login', onLogin);
 
 const onLogOut = function (req, res, next) {
-    console.log('logged out user');
+
     if (req.session) {
         // delete session object
         req.session.destroy(function (err) {
-            console.log('destroying session');
+            // console.log('destroying session');
             if (err) {
+                console.log("Error: Cannot destroy session");
                 const payload = {status: 1};
                 res.json(payload);
             } else {
+                const dt = new Date();
+                console.log('User Logged Out: ' + req.session.userId + ", at: " + dt);
                 const payload = {status: 0};
                 res.clearCookie('connect.sid', { path: '/', httpOnly: true}).json(payload);
                 //res.redirect('/');

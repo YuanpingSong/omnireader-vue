@@ -2,7 +2,7 @@
   <v-app>
 
     <v-dialog  v-model="logInDialog" width="50vw">
-      <v-tabs v-if="logInDialog" v-model="signUpTabState" color="#4DD0E1" fixed-tabs dark slider-color="yellow">
+      <v-tabs v-if="logInDialog" v-model="signUpTabState" color="grey" fixed-tabs dark slider-color="yellow">
         <v-tab :key="1" ripple> Sign In </v-tab>
         <v-tab :key="2" ripple> Sign Up </v-tab>
 
