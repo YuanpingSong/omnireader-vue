@@ -106,7 +106,7 @@
             </v-expansion-panel>
 
             <v-card-actions class="justify-right">
-                <v-btn flat color="cyan">Add To Deck</v-btn>
+                <v-btn flat color="cyan" @click="addCard">Add To Deck</v-btn>
                 <v-btn flat color="normal" @click="close">Close</v-btn>
             </v-card-actions>
         </div>
@@ -252,6 +252,14 @@
 
                 this.value.push(json);
                 this.onLoad = false;
+            },
+            addCard: async function (event) {
+                const url = 'http://localhost:3000/card/' + this.word;
+                const res = await fetch(url, {credentials: 'include'});
+                const json = await res.json();
+
+                const ev = new CustomEvent('addCardEvent', {detail: json.status} );
+                document.dispatchEvent(ev);
             }
         }
     }

@@ -60,34 +60,37 @@
     </v-toolbar>
 
 
-    <v-navigation-drawer app class="blue lighten-3" :mini-variant.sync="mini" dark v-model="sidebar" stateless>
+    <v-navigation-drawer app dark v-model="sidebar" stateless>
       <v-toolbar flat class="transparent">
-        <v-list class="pa-0">
-          <v-list-tile avatar>
-            <v-list-tile-avatar>
-              <img src="https://randomuser.me/api/portraits/men/85.jpg">
-            </v-list-tile-avatar>
+        <v-list class="pa-2">
+          <v-list-tile >
+
             <v-list-tile-content>
-              <v-list-tile-title>User</v-list-tile-title>
+              <v-list-tile-title>{{greeting}}</v-list-tile-title>
             </v-list-tile-content>
 
-            <v-list-tile-action>
-              <v-btn icon @click.stop="mini = !mini">
-                  <v-icon>chevron_left</v-icon>
-              </v-btn>
-            </v-list-tile-action>
           </v-list-tile>
         </v-list>
       </v-toolbar>
 
-      <v-list>
-        <v-list-tile v-for="item in items" :key="item.title">
+      <v-divider light></v-divider>
+
+
+
+      <v-list class="pt-0" dense>
+        <v-divider light></v-divider>
+
+        <v-list-tile
+                v-for="item in items"
+                :key="item.title"
+                @click="loadView(item.title)"
+        >
           <v-list-tile-action>
-            <v-icon>{{item.icon}}</v-icon>
+            <v-icon>{{ item.icon }}</v-icon>
           </v-list-tile-action>
 
           <v-list-tile-content>
-            <v-list-tile-title>{{item.title}}</v-list-tile-title>
+            <v-list-tile-title>{{ item.title }}</v-list-tile-title>
           </v-list-tile-content>
         </v-list-tile>
       </v-list>
@@ -185,7 +188,7 @@
 
       </v-container>
 
-      <v-snackbar v-model="snackbar" bottom :timeout="timeout">{{snackbar_text}}</v-snackbar>
+      <v-snackbar v-model="snackbar" bottom :timeout="timeout" class="cyan--text" >{{snackbar_text}}</v-snackbar>
     </v-content>
     <v-footer app dark class="grey darken-3 justify-center"> &copy;2018 — <strong>Yuanping Song</strong></v-footer>
   </v-app>
@@ -209,6 +212,7 @@ export default {
     document.addEventListener('closeDictionary', this.closeDict);
     document.addEventListener('submit_text', this.onSubmitText);
     document.addEventListener('submit_url', this.onSubmitUrl);
+    document.addEventListener('addCardEvent', this.onAddCard);
   },
   watch: {
     dictionaryDialog: function() {
@@ -217,6 +221,7 @@ export default {
   },
   data () {
     return {
+      greeting: "Hi There",
       timeout: 6000,
       snackbar: false,
       snackbar_text: "",
@@ -259,8 +264,10 @@ export default {
       sidebar: false,
       mini : true,
       items: [
-        { title: 'Home', icon: 'dashboard'},
-        { title: 'About', icon: 'question_answer'}
+        { title: 'Home', icon: 'search'},
+        { title: 'Reader', icon: 'book'},
+        { title: 'Flashcards', icon: 'library_books'},
+        { title: 'Articles', icon: 'bookmarks'}
       ]
     }
   },
@@ -445,6 +452,7 @@ export default {
         this.isLoggedIn = false;
         this.snackbar = true;
         this.snackbar_text = 'Successfully Logged Out!';
+        this.greeting = "Hi There"
       } else {
         this.snackbar = true;
         this.snackbar_text = 'Umm... Please try again';
@@ -469,6 +477,7 @@ export default {
       if (json.username) {
         this.snackbar = true;
         this.snackbar_text = "Welcome back, " + json.username +"!";
+        this.greeting = "Hello, " + json.username;
         this.isLoggedIn = true;
         this.logInDialog = false;
       } else {
@@ -521,6 +530,21 @@ export default {
         }
       }
 
+    },
+    onAddCard (event) {
+      if (event.detail == 0) {
+        this.snackbar = true;
+        this.snackbar_text = 'Added Card!'
+      } else {
+        this.snackbar = true;
+        this.snackbar_text = 'Cannot Add Card. Please First Log In!'
+        this.logInDialog = true;
+      }
+    },
+    loadView(title) {
+      if (title == 'Home') {
+
+      }
     }
   }
 }

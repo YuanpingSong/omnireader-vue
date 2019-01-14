@@ -111,6 +111,8 @@ async function lookupOxford(req, res) {
 
     const cursor = cache_col.find({word: lemma});
     const result = await cursor.next();
+
+    console.log(req.session.userId);
     if (!result) {
 
         console.log('cache miss: ' + lemma);
@@ -121,6 +123,8 @@ async function lookupOxford(req, res) {
             json = await od_res.json();
         } catch (error) {
             console.log("Rapid API error");
+            res.json({success: false});
+            return;
         }
 
         try {
@@ -129,18 +133,24 @@ async function lookupOxford(req, res) {
             console.log("stored into cache: " + json);
         } catch (error) {
             console.log("Error inserting into DB");
+            res.json({success: false});
+            return;
         }
-
-        if (json.success) {
+        //console.log('A');
+        // console.log(json);
+        if (json.word) {
             console.log('success');
             if (req.session.userId) {
-                User.findByIdAndUpdate(req.session.userId, {$push: {words: word}});
+                await User.findByIdAndUpdate(req.session.userId, {$push: {words: lemma}});
             }
         }
         res.json(json);
 
     } else {
-        console.log('cache hit: ' + lemma);
+        // console.log('cache hit: ' + lemma);
+        if (req.session.userId) {
+            await User.findByIdAndUpdate(req.session.userId, {$push: {words: lemma}});
+        }
         res.json(result);
     }
 }
@@ -162,9 +172,12 @@ async function onReceiveUrl(req, res) {
         } catch (error) {
             console.log('encountered error, ignoring request');
         }
-        const d = new Date();
+
         json = {...json, accessed: new MongoDB.Timestamp(0, Math.floor(new Date().getTime() / 1000))};
         web_cache_col.insertOne(json);
+        if (req.session.userId) {
+            await User.findByIdAndUpdate(req.session.userId, {$push: {articles: json.url}});
+        }
     } else {
         console.log('web cache hit');
         try {
@@ -178,14 +191,28 @@ async function onReceiveUrl(req, res) {
         } catch (error) {
             console.log('cannot update, ignoring')
         }
+        if (req.session.userId) {
+            await User.findByIdAndUpdate(req.session.userId, {$push: {articles: url}});
+        }
         json = result;
     }
     res.json(json);
 }
 
-app.get('/api/webparser', cors(), onReceiveUrl);
+app.get('/api/webparser', onReceiveUrl);
 
+async function onAddCard(req, res) {
+    const routeParams = req.params;
+    const word = routeParams.word;
+    if (req.session.userId) {
+        await User.findByIdAndUpdate(req.session.userId, {$push: {cards: word}});
+        res.json({status: 0});
+    } else {
+        res.json({status: 1});
+    }
+}
 
+app.get('/card/:word', onAddCard);
 // Enable CORS
 /*
 app.use(function(req, res, next) {

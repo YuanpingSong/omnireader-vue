@@ -20,6 +20,9 @@ const UserSchema = new mongoose.Schema({
     words: {
         type: [String]
     },
+    cards: {
+        type: [String]
+    },
     articles: {
         type: [String]
     },
