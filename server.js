@@ -213,6 +213,23 @@ async function onAddCard(req, res) {
 }
 
 app.get('/card/:word', onAddCard);
+
+
+async function onGetCards (req, res) {
+    if (req.session.userId) {
+        try {
+
+        } catch (error) {
+
+        }
+        let user = await User.findById(req.session.userId);
+        let cardlist = user.cards;
+    } else {
+        res.json({status: 1});
+    }
+}
+
+app.get('/user/cards', onGetCards);
 // Enable CORS
 /*
 app.use(function(req, res, next) {

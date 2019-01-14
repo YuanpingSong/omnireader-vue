@@ -105,7 +105,7 @@
 
 
         <!-- The welcome screen -->
-        <welcome-view v-if="inputViewDisplay"
+        <welcome-view v-if="activeView==='Home'" v-show="activeViewReady"
                       file-upload-event-handler="onSubmitClick"
                       submit-text-event-handler="onSubmitClick"
                       submit-u-r-l-event-handler="onSubmitClick">
@@ -124,7 +124,7 @@
 
 
         <!-- loading screen -->
-        <div class="transition-view" v-bind:style="{display: transitionViewDisplay}">
+        <div class="transition-view" xs11 v-show="!activeViewReady">
           <v-progress-circular indeterminate color="red"></v-progress-circular>
         </div>
 
@@ -133,7 +133,7 @@
 
 
         <!-- reader -->
-        <div class="reader-view" v-bind:style="{display: readerViewDisplay}">
+        <div class="reader-view" v-if="activeView==='Reader'" v-show="activeViewReady">
           <!-- Controllers for how to present the content -->
           <div class="reader-view-controls-container">
             <ul>
@@ -186,6 +186,12 @@
         </div>
 
 
+        <!-- Flashcards -->
+        <flashcard-view v-if="activeView === 'Flashcards'" v-show="activeViewReady"></flashcard-view>
+
+        <!-- Articles -->
+        <article-view v-if="activeView === 'Articles' " v-show="activeViewReady"></article-view>
+
       </v-container>
 
       <v-snackbar v-model="snackbar" bottom :timeout="timeout" class="cyan--text" >{{snackbar_text}}</v-snackbar>
@@ -198,17 +204,21 @@
 
 import DictionaryView from "./components/dictionaryView";
 import WelcomeView from "./components/welcomeView";
+import FlashcardView from "./components/flashcardView";
+import ArticleView from "./components/articleView";
 export default {
   name: 'App',
   components: {
     DictionaryView,
-    WelcomeView
+    WelcomeView,
+    FlashcardView,
+    ArticleView,
+
     //
   },
   mounted () {
     console.log('mounted');
-    document.addEventListener('scroll', this.hideBtn);
-    document.addEventListener('pointerdown', this.hideBtn);
+
     document.addEventListener('closeDictionary', this.closeDict);
     document.addEventListener('submit_text', this.onSubmitText);
     document.addEventListener('submit_url', this.onSubmitUrl);
@@ -255,9 +265,12 @@ export default {
       align: "left",
       columnWidth: "70",
       textSize: "1.5",
-      inputViewDisplay: true,
-      readerViewDisplay: 'none',
-      transitionViewDisplay: 'none',
+      // inputViewDisplay: true,
+      // readerViewDisplay: 'none',
+      // transitionViewDisplay: false,
+      readerViewInnerHTML: "",
+      activeView: 'Home',
+      activeViewReady: true,
       loadingUpload : false,
       loadingSubmit: false,
       textarea: "",
@@ -278,24 +291,38 @@ export default {
       this.loadingUpload = false;
     },
     async onSubmitText (event) {
-      this.inputViewDisplay = false;
-      this.transitionViewDisplay = "flex";
+      //this.inputViewDisplay = false;
+      //this.transitionViewDisplay = "flex";
+      this.activeViewReady = false;
+      this.activeView = 'Reader';
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      this.transitionViewDisplay = "none";
-      this.readerViewDisplay = "flex";
+      // await new Promise(resolve => setTimeout(resolve, 1000));
+      // this.transitionViewDisplay = "none";
+      // this.readerViewDisplay = "flex";
 
-      const readerContent= document.querySelector(".reader-view .reader-content");
-      const paragraphArray = event.detail.replace(/\n+/g, "\n").replace(/ +/g, " ").split('\n');
-      for (const paragraph of paragraphArray) {
-        const p = document.createElement('p');
-        p.innerText = paragraph;
-        readerContent.appendChild(p);
-      }
+      this.$nextTick(function () {
+        const readerContent= document.querySelector(".reader-view .reader-content");
+        console.log(readerContent);
+        const paragraphArray = event.detail.replace(/\n+/g, "\n").replace(/ +/g, " ").split('\n');
+        for (const paragraph of paragraphArray) {
+          const p = document.createElement('p');
+          p.innerText = paragraph;
+          readerContent.appendChild(p);
+        }
+
+        document.addEventListener('scroll', this.hideBtn);
+        document.addEventListener('pointerdown', this.hideBtn);
+
+        this.readerViewInnerHTML = readerContent.innerHTML;
+
+        this.activeViewReady = true;
+      });
     },
     async onSubmitUrl (event) {
-      this.inputViewDisplay = false;
-      this.transitionViewDisplay = "flex";
+      // this.inputViewDisplay = false;
+      // this.transitionViewDisplay = "flex";
+      this.activeViewReady = false;
+      this.activeView = 'Reader';
       const url = event.detail;
 
       try {
@@ -305,33 +332,40 @@ export default {
         await this.onSubmitUrl(event);
         return;
       }
+      this.$nextTick(function () {
+        const readerContent= document.querySelector(".reader-view .reader-content");
+        if (json.hasOwnProperty('title')) {
+          const t = document.createElement('h1');
+          t.innerText = json['title'];
+          readerContent.appendChild(t);
+        }
 
-      const readerContent= document.querySelector(".reader-view .reader-content");
-      if (json.hasOwnProperty('title')) {
-        const t = document.createElement('h1');
-        t.innerText = json['title'];
-        readerContent.appendChild(t);
-      }
+        if (json.hasOwnProperty('author')) {
+          const em = document.createElement('em');
+          em.innerText = json['author'];
+          readerContent.appendChild(em);
+          const br = document.createElement('br');
+          readerContent.appendChild(br);
+        }
 
-      if (json.hasOwnProperty('author')) {
-        const em = document.createElement('em');
-        em.innerText = json['author'];
-        readerContent.appendChild(em);
-        const br = document.createElement('br');
-        readerContent.appendChild(br);
-      }
+        if (json.hasOwnProperty('lead_image_url')) {
+          const img = document.createElement('img');
+          img.src = json['lead_image_url'];
+          img.style.maxHeight = '90%';
+          img.style.maxWidth = '90%';
+          readerContent.appendChild(img);
+        }
 
-      if (json.hasOwnProperty('lead_image_url')) {
-        const img = document.createElement('img');
-        img.src = json['lead_image_url'];
-        img.style.maxHeight = '90%';
-        img.style.maxWidth = '90%';
-        readerContent.appendChild(img);
-      }
+        readerContent.innerHTML = readerContent.innerHTML + json['content'];
+        this.readerViewInnerHTML = readerContent.innerHTML;
+        // this.transitionViewDisplay = "none";
+        // this.readerViewDisplay = "flex";
 
-      readerContent.innerHTML = readerContent.innerHTML + json['content'];
-      this.transitionViewDisplay = "none";
-      this.readerViewDisplay = "flex";
+        document.addEventListener('scroll', this.hideBtn);
+        document.addEventListener('pointerdown', this.hideBtn);
+
+        this.activeViewReady = true;
+      });
     },
     controlItemOnClick (selector) {
       for (let i = 0; i < 4; i++) {
@@ -542,8 +576,26 @@ export default {
       }
     },
     loadView(title) {
-      if (title == 'Home') {
+      if (title !== this.activeView) {
 
+        if (this.activeView === 'Reader') {
+          document.removeEventListener('scroll', this.hideBtn);
+          document.removeEventListener('pointerdown', this.hideBtn);
+        }
+
+        this.activeViewReady = false;
+        this.activeView = title;
+        this.$nextTick(function () {
+          if (title === 'Reader') { // transition to reader, add event listeners
+            document.addEventListener('scroll', this.hideBtn);
+            document.addEventListener('pointerdown', this.hideBtn);
+          }
+          if (this.activeView == 'Reader' && this.readerViewInnerHTML) {
+            const readerContent= document.querySelector(".reader-view .reader-content");
+            readerContent.innerHTML = this.readerViewInnerHTML;
+          }
+          this.activeViewReady = true;
+        });
       }
     }
   }
