@@ -173,6 +173,7 @@ async function onReceiveUrl(req, res) {
             console.log('encountered error, ignoring request');
         }
 
+
         json = {...json, accessed: new MongoDB.Timestamp(0, Math.floor(new Date().getTime() / 1000))};
         web_cache_col.insertOne(json);
         if (req.session.userId) {
@@ -217,19 +218,85 @@ app.get('/card/:word', onAddCard);
 
 async function onGetCards (req, res) {
     if (req.session.userId) {
+        let user = undefined;
         try {
-
+            user = await User.findById(req.session.userId);
         } catch (error) {
-
+            console.log('Illegal User ID');
+            res.json({status: 1});
+            return;
         }
-        let user = await User.findById(req.session.userId);
+
+        if (!user) {
+            console.log('Illegal User ID');
+            res.json({status: 1});
+            return;
+        }
+
         let cardlist = user.cards;
+        console.log(cardlist);
+
+        let json = {cards: []};
+        for (let card of cardlist) {
+            console.log('Hi');
+            const cursor = cache_col.find({word: card});
+            const result = await cursor.next();
+            if (result) {
+                console.log('Hi');
+                json.cards.push(result);
+            }
+        }
+        console.log(json);
+        res.json({...json, status: 0});
     } else {
         res.json({status: 1});
+        // didn't log in
     }
 }
 
 app.get('/user/cards', onGetCards);
+
+
+async function onGetArticles (req, res) {
+    if (req.session.userId) {
+        let user = undefined;
+        try {
+            user = await User.findById(req.session.userId);
+        } catch (error) {
+            console.log('Illegal User ID');
+            res.json({status: 1});
+            return;
+        }
+
+        if (!user) {
+            console.log('Illegal User ID');
+            res.json({status: 1});
+            return;
+        }
+
+        let articlelist = user.articles;
+        console.log(articlelist);
+
+        let json = {articles: []};
+        for (let article of articlelist) {
+            console.log('Hi');
+            const cursor = web_cache_col.find({url: article});
+            const result = await cursor.next();
+            if (result) {
+                console.log('Hi');
+                result.content = "";
+                json.articles.push(result);
+            }
+        }
+        console.log(json);
+        res.json({...json, status: 0});
+    } else {
+        res.json({status: 1});
+        // didn't log in
+    }
+}
+
+app.get('/user/articles', onGetArticles);
 // Enable CORS
 /*
 app.use(function(req, res, next) {
@@ -307,7 +374,7 @@ const onLogOut = function (req, res, next) {
                 res.json(payload);
             } else {
                 const payload = {status: 0};
-                res.json(payload);
+                res.clearCookie('connect.sid', { path: '/', httpOnly: true}).json(payload);
                 //res.redirect('/');
             }
         });

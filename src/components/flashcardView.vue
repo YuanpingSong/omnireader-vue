@@ -1,20 +1,20 @@
 <template>
-    <v-layout-row>
-        <v-flex v-for="(word, i) in model" :key="i" xs5 md4>
-            <v-card>
-                <v-card-title primary-title>
+    <v-layout row wrap fill-height>
+        <v-flex v-for="(word, i) in model" :key="i" xs5 sm4 md3 lg2>
+            <v-card :color="chooseColor()" dark class="ma-2">
+                <v-card-title primary-title class="pa-2">
                     <div>
                         <h3 class="headline mb-0">{{word.word}}</h3>
-                        <div v-if="getPronunciation(word.word)">{{getPronunciation(word.word)}}</div>
+                        <div v-if="getPronunciation(word)">/{{getPronunciation(word)}}/</div>
                     </div>
                 </v-card-title>
-                <v-divider dark></v-divider>
-                <v-card-text>
+                <v-divider light></v-divider>
+                <v-card-text class="pa-2">
                     {{getOneDefinition(word)}}
                 </v-card-text>
             </v-card>
         </v-flex>
-    </v-layout-row>
+    </v-layout>
 </template>
 
 <script>
@@ -28,14 +28,20 @@
         async created () {
             try{
                 const res = await fetch('http://localhost:3000/user/cards', {method: 'GET', credentials: 'include'});
-                this.model = await res.json();
+                const json = await res.json();
+                if (json.status == 0) {
+                    this.model = json.cards;
+                } else {
+                    this.model = [];
+                }
+                console.log(this.model);
             } catch (error) {
                 console.log('Encountered error fetching flashcards from server!');
             }
         },
         methods: {
             getPronunciation (word) {
-                if (word.pronunciation) {
+                if (word && word.pronunciation) {
                     const p = word.pronunciation;
                     if (typeof p === 'object') {
                         return Object.values(p)[0];
@@ -54,7 +60,15 @@
                 }
             },
             chooseColor () {
-
+                const choices = [
+                    "#DF3B57",
+                    "#0F7173",
+                    "#EE4B6A",
+                    "#3EA5CE",
+                    "#227799",
+                    "#EDAE49"
+                ];
+                return choices[Math.floor(Math.random() * choices.length)];
             },
         }
 

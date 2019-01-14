@@ -124,7 +124,7 @@
 
 
         <!-- loading screen -->
-        <div class="transition-view" xs11 v-show="!activeViewReady">
+        <div class="transition-view d-flex" xs11 v-if="!activeViewReady">
           <v-progress-circular indeterminate color="red"></v-progress-circular>
         </div>
 
@@ -133,7 +133,7 @@
 
 
         <!-- reader -->
-        <div class="reader-view" v-if="activeView==='Reader'" v-show="activeViewReady">
+        <div class="reader-view d-flex" v-if="activeView==='Reader'" v-show="activeViewReady">
           <!-- Controllers for how to present the content -->
           <div class="reader-view-controls-container">
             <ul>
@@ -196,7 +196,7 @@
 
       <v-snackbar v-model="snackbar" bottom :timeout="timeout" class="cyan--text" >{{snackbar_text}}</v-snackbar>
     </v-content>
-    <v-footer app dark class="grey darken-3 justify-center"> &copy;2018 — <strong>Yuanping Song</strong></v-footer>
+    <v-footer app dark class="grey darken-3 justify-center"> &copy;2019 — <strong>Yuanping Song</strong></v-footer>
   </v-app>
 </template>
 
