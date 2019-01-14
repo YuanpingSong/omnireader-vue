@@ -233,7 +233,7 @@
                 this.onLoad = true;
                 let res;
                 try {
-                    res = await fetch('http://localhost:3000/dict/' + word, {method: 'GET', credentials: 'include'});
+                    res = await fetch('http://oreader.app/dict/' + word, {method: 'GET', credentials: 'include'});
                 } catch (error) {
                     this.value.push(null);
                     return;
@@ -254,7 +254,7 @@
                 this.onLoad = false;
             },
             addCard: async function (event) {
-                const url = 'http://localhost:3000/card/' + this.word;
+                const url = 'http://oreader.app/card/' + this.word;
                 const res = await fetch(url, {credentials: 'include'});
                 const json = await res.json();
 

@@ -27,7 +27,7 @@
         },
         async created () {
             try{
-                const res = await fetch('http://localhost:3000/user/articles', {method: 'GET', credentials: 'include'});
+                const res = await fetch('http://oreader.app/user/articles', {method: 'GET', credentials: 'include'});
                 const json = await res.json();
                 if (json.status == 0) {
                     this.model = json.articles;
