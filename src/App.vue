@@ -1,13 +1,61 @@
 <template>
   <v-app>
 
+    <v-dialog  v-model="logInDialog" width="50vw">
+      <v-tabs v-if="logInDialog" v-model="signUpTabState" color="#4DD0E1" fixed-tabs dark slider-color="yellow">
+        <v-tab :key="1" ripple> Sign In </v-tab>
+        <v-tab :key="2" ripple> Sign Up </v-tab>
+
+        <v-tab-item :key="1">
+          <v-card flat>
+            <v-card-media>
+              <v-layout class="justify-center">
+                <v-flex xs11>
+                  <v-form v-model="loginFormValid" lazy-validation ref="loginForm">
+                    <v-text-field class="mt-2"  required label="Email" v-model="loginEmail" :rules="emailRules" clearable></v-text-field>
+                    <v-text-field required  label="Password" v-model="loginPassword" :rules="passwordRules" type="password" clearable></v-text-field>
+                  </v-form>
+                </v-flex>
+              </v-layout>
+            </v-card-media>
+            <v-card-actions>
+              <v-spacer></v-spacer> <v-btn color="primary" flat @click="onLogInUser">Sign In</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-tab-item>
+
+        <v-tab-item :key="2">
+          <v-card flat>
+          <v-card-media>
+            <v-layout class="justify-center">
+              <v-flex xs11>
+                <v-form v-model="signUpFormValid" lazy-validation ref="signUpForm">
+                  <v-text-field required label="Name"  v-model="signUpName" :rules="[v => !!v || 'Name is required']"  clearable></v-text-field>
+                  <v-text-field required label="Email"   v-model="signUpEmail" :rules="emailRules"  clearable></v-text-field>
+                  <v-text-field required label="Password"  v-model="signUpPassword" :rules="passwordRules" type="password"  clearable></v-text-field>
+                  <v-text-field required label="Confirm Password"  v-model="signUpConfirmPassword" :rules="confirmPasswordRules" type="password"  clearable></v-text-field>
+                </v-form>
+              </v-flex>
+            </v-layout>
+          </v-card-media>
+          <v-card-actions>
+            <v-spacer></v-spacer> <v-btn color="primary" flat @click="onSignUpUser">Create Account</v-btn>
+          </v-card-actions>
+        </v-card>
+        </v-tab-item>
+      </v-tabs>
+
+    </v-dialog>
+
     <v-toolbar app scroll-off-screen="">
       <v-toolbar-side-icon @click="sidebar = !sidebar"></v-toolbar-side-icon>
       <v-toolbar-title>OmniReader</v-toolbar-title>
       <v-spacer></v-spacer>
       <v-toolbar-items>
-        <v-btn>Log in</v-btn>
-        <v-btn>Edit</v-btn>
+        <v-btn v-if="!isLoggedIn" @click="onLogIn">Log in</v-btn>
+
+
+        <v-btn v-if="isLoggedIn" @click="onLogOut">Log out</v-btn>
       </v-toolbar-items>
     </v-toolbar>
 
@@ -136,6 +184,8 @@
 
 
       </v-container>
+
+      <v-snackbar v-model="snackbar" bottom :timeout="timeout">{{snackbar_text}}</v-snackbar>
     </v-content>
     <v-footer app dark class="grey darken-3 justify-center"> &copy;2018 — <strong>Yuanping Song</strong></v-footer>
   </v-app>
@@ -167,6 +217,33 @@ export default {
   },
   data () {
     return {
+      timeout: 6000,
+      snackbar: false,
+      snackbar_text: "",
+      loginFormValid: false,
+      signUpFormValid: false,
+      loginEmail: undefined,
+      loginPassword: undefined,
+      signUpEmail: undefined,
+      signUpName: undefined,
+      signUpPassword: undefined,
+      signUpConfirmPassword: undefined,
+      emailRules: [
+        v => !!v || 'E-mail is required',
+        v => /.+@.+/.test(v) || 'E-mail must be valid'
+      ],
+      passwordRules: [
+        v => !!v || 'Password is required',
+        v => (v && v.length >= 6) || 'Password must use at least 6 characters'
+      ],
+      confirmPasswordRules: [
+        v => !!v || 'Please confirm you password',
+        v => (!!v || v == this.signUpPassword) || 'Passwords must match'
+      ],
+      signUpTabState: 0,
+      logInDialog: false,
+      logOutDialog: false,
+      isLoggedIn: false,
       dictionaryJson: undefined,
       dictionaryDialog: false,
       controlsState :['none', 'none', 'none', 'none'],
@@ -345,6 +422,89 @@ export default {
     closeDict() {
       this.dictionaryJson = undefined;
       this.dictionaryDialog = false;
+    },
+    onLogIn(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      //this.$refs.loginForm.reset();
+      //this.$refs.signUpForm.reset();
+      this.logInDialog = true;
+      this.signUpTabState = 0;
+    },
+    async onLogOut() {
+      console.log('attempting to logout');
+      let json = undefined;
+      try {
+        const res = await fetch('http://localhost:3000/logout');
+        json = await res.json();
+      } catch (error) {
+        console.log('encountered error while logging out');
+        return;
+      }
+      if (json.status && json.status == 0) {
+        consle.log('here');
+        this.isLoggedIn = false;
+        this.snackbar = true;
+        this.snackbar_text = 'Successfully Logged Out!';
+      } else {
+        this.snackbar = true;
+        this.snackbar_text = 'Umm... Please try again';
+      }
+
+    },
+    async onLogInUser (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      let payload = {
+        username: this.signUpName,
+        email: this.signUpEmail,
+        password: this.signUpPassword,
+        passwordConf: this.signUpConfirmPassword
+      };
+    },
+    async onSignUpUser(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (this.$refs.signUpForm.validate()) {
+        let payload = {
+          username: this.signUpName,
+          email: this.signUpEmail,
+          password: this.signUpPassword,
+          passwordConf: this.signUpConfirmPassword
+        };
+        console.log(JSON.stringify(payload), );
+
+        let json = undefined;
+        try {
+          const res = await fetch(
+                  'http://localhost:3000/login',
+                  {
+                    method: 'POST',
+                    headers: {
+                      "Content-Type": "application/json",
+                      // "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                    body: JSON.stringify(payload),
+                  });
+          json = await res.json();
+        } catch (err) {
+          console.log(err);
+          return;
+        }
+
+
+        if (json.status == 0) {
+          this.logInDialog = false;
+          this.snackbar= true;
+          this.snackbar_text = 'Success!';
+          this.isLoggedIn = true;
+        } else {
+          this.snackbar= true;
+          this.snackbar_text = 'Email already taken ... Please provide a different email address';
+        }
+      }
+
     }
   }
 }

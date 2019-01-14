@@ -1,3 +1,10 @@
+// BodyParser Setup
+var bodyParser = require('body-parser');
+
+// Wordlist Setup
+// const wordlist_5500 = require('./graduate_5500.json');
+// const set_5500 = new Set(wordlist_5500);
+
 // CoreNLP Setup
 const CoreNLP = require('corenlp');
 const connector = new CoreNLP.ConnectorServer({ dsn: 'http://localhost:9000' });
@@ -13,11 +20,11 @@ const MongoClient = MongoDB.MongoClient;
 const url = 'mongodb://localhost:27017';
 // Database Name
 const db_name = 'dictionary';
-const collection_name = 'definitions';
+// const collection_name = 'definitions';
 const cache_collection_name = 'dictionary_cache';
 const mercury_cache_name = 'web_cache';
 const client = new MongoClient(url);
-let col = null; // collection, to be initialized
+// let col = null;
 let cache_col = null;
 let web_cache_col = null;
 
@@ -25,16 +32,6 @@ let web_cache_col = null;
 const express = require('express');
 const app = express();
 app.use(express.static('public'));
-
-// BodyParser Setup
-const bodyParser = require('body-parser');
-const jsonParser = bodyParser.json();
-
-
-// Wordlist Setup
-const wordlist_5500 = require('./graduate_5500.json');
-const set_5500 = new Set(wordlist_5500);
-
 
 // Words API Meta
 const wd_baseurl = 'https://wordsapiv1.p.rapidapi.com/words/';
@@ -49,63 +46,51 @@ const fetch = require('node-fetch');
 // Assert Library
 const assert = require('assert');
 
-// Mongoose Setup
+// Authentication
 const mongoose = require('mongoose');
-const UserSchema = new mongoose.Schema({
-    email: {
-        type: String,
-        unique: true,
-        required: true,
-        trim: true
-    },
-    username: {
-        type: String,
-        unique: true,
-        required: true,
-        trim: true
-    }
-})
+const session = require('express-session');
+const MongoStore = require('connect-mongo')(session);
+
+// Connect to MongoDB, again!
+mongoose.connect('mongodb://localhost/user_db');
+const user_db = mongoose.connection;
+
+const User = require('./user');
+
+user_db.on('error', console.error.bind(console, 'connection error:'));
+user_db.once('open', function () {
+    console.log('mongoose connected to user_db');
+});
+
+
+// Configure Session
+app.use(session({
+    secret: 'I Love Shanghai',
+    resave: true,
+    saveUninitialized: false,
+    store: new MongoStore({
+        mongooseConnection: user_db
+    })
+}));
+
+app.use(function(req, res, next) { res.header("Access-Control-Allow-Origin", "*"); res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept"); next(); });
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+// const routes = require('./router');
+//app.use('/', routes);
 
 (async function() {
     try {
         await client.connect();
         console.log('Connected correctly to database');
         const db = client.db(db_name);
-        col = db.collection(collection_name);
+        // col = db.collection(collection_name);
         cache_col = db.collection(cache_collection_name);
         web_cache_col = db.collection(mercury_cache_name);
     } catch(err) {
         console.log(err.stack);
     }
-})()
-
-async function onLookupWord(req, res) {
-    const routeParams = req.params;
-    const word = routeParams.word;
-    const result = await lookupWord(word);
-    if (!result) {
-        res.sendStatus(400);
-    } else {
-        res.json(result);
-    }
-}
-
-app.get('/lookup/:word', onLookupWord);
-
-async function lookupWord(word) {
-    const key = word.toLowerCase();
-    const cursor = col.find({'word': key});
-    const result = await cursor.next();
-    if (!result) {
-        return null;
-    } else {
-        return {
-            word: result['word'],
-            definitions: result['definitions_list']
-        }
-    }
-}
-
+})();
 
 async function getLemma(word) {
     const sent = new CoreNLP.default.simple.Sentence(word);
@@ -137,35 +122,9 @@ async function lookupOxford(req, res) {
         console.log('cache hit: ' + lemma);
         res.json(result);
     }
-
-
-
 }
-
 
 app.get('/dict/:word',cors(), lookupOxford);
-
-async function onReceiveArticle(req, res) {
-    if (!req.body) return res.sendStatus(400);
-    const text = req.body['article'].trim();
-    const sent =  new CoreNLP.default.simple.Document(text);
-    const parsedResult = await pipeline.annotate(sent);
-
-    let promises = [];
-    for (const sentence of parsedResult.sentences()) {
-        for (const token of sentence.tokens()) {
-            if (token.lemma().match(/[a-z]/i) && !set_5500.has(token.lemma())) {
-                promises.push(lookupWord(token.lemma()));
-            }
-        }
-    }
-    const results = await Promise.all(promises);
-    const nonNull = results.filter(elt => elt);
-    // console.log(results);
-    res.json(nonNull);
-}
-
-app.post('/api/article', jsonParser, onReceiveArticle);
 
 async function onReceiveUrl(req, res) {
     const url = req.query.url;
@@ -203,12 +162,150 @@ async function onReceiveUrl(req, res) {
     res.json(json);
 }
 
-
 app.get('/api/webparser', cors(), onReceiveUrl);
 
 
+// Enable CORS
+/*
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});*/
+
+
+const onLogin = function (req, res, next) {
+    console.log(req.body);
+    // confirm that user typed same password twice
+    if (req.body.password !==req.body.passwordConf) {
+        var err = new Error('Passwords do not match.');
+        err.status = 400;
+        res.send("passwords dont match");
+        return next(err);
+    }
+    // Case: Account Creation
+    if (req.body.email &&
+        req.body.username &&
+        req.body.password) {
+
+        const userData = {
+            email: req.body.email,
+            username: req.body.username,
+            password: req.body.password,
+            // passwordConf: req.body.passwordConf,
+        };
+
+        User.create(userData, function (error, user) {
+            if (error) {
+                const payload = {status: 1};
+                return res.json(payload);
+            } else {
+                const payload = {status: 0};
+                req.session.userId = user._id;
+                return res.json(payload);
+            }
+        });
+        // Case: logging on
+    } else if (req.body.logemail && req.body.logpassword) {
+        User.authenticate(req.body.logemail, req.body.logpassword, function (error, user) {
+            if (error || !user) {
+                var err = new Error('Wrong email or password.');
+                err.status = 401;
+                return next(err);
+            } else {
+                req.session.userId = user._id;
+                return res.redirect('/profile');
+            }
+        });
+    } else {
+        const err = new Error('All fields required.');
+        err.status = 400;
+        return next(err);
+    }
+};
+
+app.post('/login', onLogin);
+
+const onLogOut = function (req, res, next) {
+    console.log('logged out user');
+    if (req.session) {
+        // delete session object
+        req.session.destroy(function (err) {
+            console.log('destroying session');
+            if (err) {
+                const payload = {status: 1};
+                res.json(payload);
+            } else {
+                const payload = {status: 0};
+                res.json(payload);
+                //res.redirect('/');
+            }
+        });
+    }
+};
+
+app.get('/logout', onLogOut);
+
 app.listen(3000, function () {
     console.log('Server listening on port 3000');
-})
+});
 
 client.close();
+
+
+
+
+
+/*
+async function onReceiveArticle(req, res) {
+    if (!req.body) return res.sendStatus(400);
+    const text = req.body['article'].trim();
+    const sent =  new CoreNLP.default.simple.Document(text);
+    const parsedResult = await pipeline.annotate(sent);
+
+    let promises = [];
+    for (const sentence of parsedResult.sentences()) {
+        for (const token of sentence.tokens()) {
+            if (token.lemma().match(/[a-z]/i) && !set_5500.has(token.lemma())) {
+                promises.push(lookupWord(token.lemma()));
+            }
+        }
+    }
+    const results = await Promise.all(promises);
+    const nonNull = results.filter(elt => elt);
+    // console.log(results);
+    res.json(nonNull);
+}
+
+app.post('/api/article', jsonParser, onReceiveArticle);
+
+*/
+
+
+/*
+async function onLookupWord(req, res) {
+    const routeParams = req.params;
+    const word = routeParams.word;
+    const result = await lookupWord(word);
+    if (!result) {
+        res.sendStatus(400);
+    } else {
+        res.json(result);
+    }
+}
+
+app.get('/lookup/:word', onLookupWord);
+
+async function lookupWord(word) {
+    const key = word.toLowerCase();
+    const cursor = col.find({'word': key});
+    const result = await cursor.next();
+    if (!result) {
+        return null;
+    } else {
+        return {
+            word: result['word'],
+            definitions: result['definitions_list']
+        }
+    }
+}*/
