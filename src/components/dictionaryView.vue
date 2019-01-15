@@ -254,7 +254,7 @@
                 this.onLoad = false;
             },
             addCard: async function (event) {
-                const url = 'http://oreader.app/card/' + this.word;
+                const url = '/card/' + this.word;
                 const res = await fetch(url, {credentials: 'include'});
                 const json = await res.json();
 

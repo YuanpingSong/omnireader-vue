@@ -1,6 +1,12 @@
 // BodyParser Setup
 var bodyParser = require('body-parser');
-
+const fs = require('fs');
+const https = require('https');
+const options = {
+    key: fs.readFileSync('cert/new_private.key'),
+    certificate: fs.readFileSync('cert/oreader.cert'),
+    ca: [fs.readFileSync('cert/first.cert'), fs.readFileSync('cert/second.cert'), fs.readFileSync('cert/third.cert')]
+};
 // Wordlist Setup
 // const wordlist_5500 = require('./graduate_5500.json');
 // const set_5500 = new Set(wordlist_5500);
@@ -74,7 +80,7 @@ app.use(session({
 }));
 
 app.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "http://www.oreader.app");
+    res.header("Access-Control-Allow-Origin", "https://www.oreader.app");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     res.header("Access-Control-Allow-Credentials", "true");
     next(); });
@@ -387,11 +393,14 @@ const onLogOut = function (req, res, next) {
 
 app.get('/logout', onLogOut);
 
-app.listen(80, function () {
-    console.log('Server listening on port 80');
-});
+https.createServer(options, app).listen(443);
+// app.listen(80, function () {
+//    console.log('Server listening on port 80');
+// });
 
 client.close();
+
+
 
 
 
