@@ -2,6 +2,7 @@
 var bodyParser = require('body-parser');
 const fs = require('fs');
 const https = require('https');
+const http = require('http');
 const options = {
     key: fs.readFileSync('new_cert/oreader.key'),
     certificate: fs.readFileSync('new_cert/903f8175a2d51e93.crt'),
@@ -393,6 +394,7 @@ const onLogOut = function (req, res, next) {
 
 app.get('/logout', onLogOut);
 
+http.createServer(app).listen(80);
 https.createServer(options, app).listen(443);
 // app.listen(80, function () {
 //    console.log('Server listening on port 80');
