@@ -3,9 +3,9 @@ var bodyParser = require('body-parser');
 const fs = require('fs');
 const https = require('https');
 const options = {
-    key: fs.readFileSync('certificates/key.pem').toString(),
-    certificate: fs.readFileSync('certificates/f153c0412a761be0.crt').toString(),
-    ca: [fs.readFileSync('certificates/gd_bundle-g2-g1.crt').toString()]
+    key: fs.readFileSync('certificates/key.pem'),
+    certificate: fs.readFileSync('certificates/f153c0412a761be0.crt'),
+    ca: [fs.readFileSync('certificates/gd_bundle-g2-g1.crt')]
 };
 // Wordlist Setup
 // const wordlist_5500 = require('./graduate_5500.json');
