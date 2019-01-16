@@ -389,7 +389,7 @@ const onLogOut = function (req, res, next) {
                 res.json(payload);
             } else {
                 const dt = new Date();
-                console.log('User Logged Out: ' + req.session.userId + ", at: " + dt);
+                console.log('User Logged Out: ' + uid + ", at: " + dt);
                 const payload = {status: 0};
                 res.clearCookie('connect.sid', { path: '/', httpOnly: true}).json(payload);
                 //res.redirect('/');
