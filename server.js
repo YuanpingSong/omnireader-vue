@@ -74,7 +74,11 @@ user_db.once('open', function () {
 app.use(session({
     secret: 'I Love Shanghai',
     resave: true,
-    saveUninitialized: false,
+    saveUninitialized: true,
+    cookie: {
+        secure: true,
+        httpOnly: true
+    },
     store: new MongoStore({
         mongooseConnection: user_db
     })
