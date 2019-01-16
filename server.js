@@ -376,7 +376,8 @@ const onLogin = function (req, res, next) {
 app.post('/login', onLogin);
 
 const onLogOut = function (req, res, next) {
-
+    const uid = req.session.userId;
+    console.log('uid is: ' + uid);
     if (req.session) {
         // delete session object
         req.session.destroy(function (err) {
