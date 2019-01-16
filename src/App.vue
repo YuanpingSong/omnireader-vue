@@ -171,7 +171,7 @@
 
 
           <!-- The main content on the page -->
-          <div class="reader-content" @mouseup="getSelectionText" v-bind:style="{width: columnWidth+'%', fontSize: textSize+'em', fontFamily: font, textAlign: align }"></div>
+          <div class="reader-content" @pointerup="getSelectionText" v-bind:style="{width: columnWidth+'%', fontSize: textSize+'em', fontFamily: font, textAlign: align }"></div>
 
 
           <!-- The define button, normally hidden -->
