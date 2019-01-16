@@ -5,7 +5,7 @@ const https = require('https');
 const http = require('http');
 const options = {
     key: fs.readFileSync('new_cert/oreader.key'),
-    certificate: fs.readFileSync('new_cert/903f8175a2d51e93.crt'),
+    cert: fs.readFileSync('new_cert/903f8175a2d51e93.crt'),
     ca: [fs.readFileSync('new_cert/gd_bundle-g2-g1.crt')]
 };
 // Wordlist Setup
@@ -395,7 +395,7 @@ const onLogOut = function (req, res, next) {
 app.get('/logout', onLogOut);
 
 http.createServer(app).listen(80);
-https.createServer(options, app).listen(443);
+https.createServer(options, app).listen(8443);
 // app.listen(80, function () {
 //    console.log('Server listening on port 80');
 // });
