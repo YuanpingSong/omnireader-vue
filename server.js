@@ -378,6 +378,7 @@ const onLogOut = function (req, res, next) {
         req.session.destroy(function (err) {
             // console.log('destroying session');
             if (err) {
+                console.log(err);
                 console.log("Error: Cannot destroy session");
                 const payload = {status: 1};
                 res.json(payload);
