@@ -410,6 +410,7 @@ export default {
     async lookupWord () {
       const sel = window.getSelection();
       if (!sel.isCollapsed) {
+        /*
         const range = document.createRange();
         range.setStart(sel.anchorNode, sel.anchorOffset);
         range.setEnd(sel.focusNode, sel.focusOffset);
@@ -430,7 +431,7 @@ export default {
 
         sel.modify("extend", direction[1], "character");
         sel.modify("extend", direction[0], "word");
-
+        */
 
         console.log('sent request to server for word: ' + sel.toString());
         let res;
