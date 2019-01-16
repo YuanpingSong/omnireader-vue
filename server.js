@@ -75,11 +75,6 @@ app.use(session({
     secret: 'I Love Shanghai',
     resave: true,
     saveUninitialized: false,
-    // Modified
-    cookie: {
-        httpOnly: true,
-        secure: true,
-    },
     store: new MongoStore({
         mongooseConnection: user_db
     })
