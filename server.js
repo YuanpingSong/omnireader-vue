@@ -395,7 +395,7 @@ const onLogOut = function (req, res, next) {
 app.get('/logout', onLogOut);
 
 http.createServer(app).listen(80);
-https.createServer(options, app).listen(8443);
+https.createServer(options, app).listen(443);
 // app.listen(80, function () {
 //    console.log('Server listening on port 80');
 // });
