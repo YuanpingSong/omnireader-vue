@@ -2,7 +2,7 @@
     <v-container fluid>
         <v-layout row wrap class="justify-center" >
             <v-flex xs11 md9 lg8 class="text-xs-right">
-                <v-textarea name="input-article" placeholder="Enter some text or an URL to begin!" auto-grow box autofocus clearable v-model="textInput" ></v-textarea>
+                <v-textarea name="input-article" placeholder="Enter some text or an URL to begin! Ex. https://en.wikipedia.org/wiki/Web_application" auto-grow box autofocus clearable v-model="textInput" ></v-textarea>
                 <v-btn  @click="onUpload"> Upload  <v-icon right dark>cloud_upload</v-icon></v-btn>
                 <v-btn  @click="onSubmit"> Submit </v-btn>
             </v-flex>
